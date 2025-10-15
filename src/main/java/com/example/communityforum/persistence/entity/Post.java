@@ -1,5 +1,6 @@
 package com.example.communityforum.persistence.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.*;
 import java.time.LocalDateTime;
@@ -28,5 +29,6 @@ public class Post {
     private User user;
 
     @OneToMany(mappedBy = "post", cascade = CascadeType.ALL)
+    @JsonIgnore
     private List<Comment> comments;
 }
