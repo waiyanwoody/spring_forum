@@ -2,6 +2,8 @@ package com.example.communityforum.service;
 
 import com.example.communityforum.persistence.entity.Post;
 import com.example.communityforum.persistence.repository.PostRepository;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -16,8 +18,8 @@ public class PostService {
         this.postRepository = postRepository;
     }
 
-    public List<Post> getAllPosts() {
-        return postRepository.findAll();
+    public Page<Post> getAllPosts(Pageable pageable) {
+        return postRepository.findAll(pageable);
     }
 
     public Optional<Post> getPostById(Long id) {
