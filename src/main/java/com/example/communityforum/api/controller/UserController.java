@@ -1,7 +1,10 @@
 package com.example.communityforum.api.controller;
 
+import com.example.communityforum.dto.UserRequestDTO;
+import com.example.communityforum.dto.UserResponseDTO;
 import com.example.communityforum.persistence.entity.User;
 import com.example.communityforum.service.UserService;
+import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -18,27 +21,22 @@ public class UserController {
         this.userService = userService;
     }
 
-    // ✅ Create a new user
+    // Create a new user
     @PostMapping
-    public ResponseEntity<User> createUser(@RequestBody User user) {
-        try {
-            User createdUser = userService.createUser(user);
-            return ResponseEntity.ok(createdUser);
-        } catch (Exception e) {
-            return ResponseEntity.badRequest().build();
-        }
+    public ResponseEntity<UserResponseDTO> createUser(@Valid @RequestBody UserRequestDTO  userRequestDTO) {
+        return ResponseEntity.ok(userService.createUser(userRequestDTO));
     }
 
-    // ✅ Get all users
+    // Get all users
     @GetMapping
-    public ResponseEntity<List<User>> getAllUsers() {
-        List<User> users = userService.getAllUsers();
+    public ResponseEntity<List<UserResponseDTO>> getAllUsers() {
+        List<UserResponseDTO> users = userService.getAllUsers();
         return ResponseEntity.ok(users);
     }
 
-    // ✅ Get user by ID
+    // Get user by ID
     @GetMapping("/{id}")
-    public ResponseEntity<User> getUserById(@PathVariable Long id) {
+    public ResponseEntity<UserResponseDTO> getUserById(@PathVariable Long id) {
         return userService.getUserById(id)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
@@ -61,19 +59,19 @@ public class UserController {
     }
 
     // ✅ Update user
-    @PutMapping("/{id}")
-    public ResponseEntity<User> updateUser(@PathVariable Long id, @RequestBody User userDetails) {
-        return userService.getUserById(id)
-                .map(existingUser -> {
-                    existingUser.setUsername(userDetails.getUsername());
-                    existingUser.setEmail(userDetails.getEmail());
-                    existingUser.setPassword(userDetails.getPassword());
-                    // Hash password here if needed
-                    User updated = userService.createUser(existingUser);
-                    return ResponseEntity.ok(updated);
-                })
-                .orElse(ResponseEntity.notFound().build());
-    }
+//    @PutMapping("/{id}")
+//    public ResponseEntity<User> updateUser(@PathVariable Long id, @RequestBody User userDetails) {
+//        return userService.getUserById(id)
+//                .map(existingUser -> {
+//                    existingUser.setUsername(userDetails.getUsername());
+//                    existingUser.setEmail(userDetails.getEmail());
+//                    existingUser.setPassword(userDetails.getPassword());
+//                    // Hash password here if needed
+//                    User updated = userService.createUser(existingUser);
+//                    return ResponseEntity.ok(updated);
+//                })
+//                .orElse(ResponseEntity.notFound().build());
+//    }
 
     // ✅ Delete user
     @DeleteMapping("/{id}")

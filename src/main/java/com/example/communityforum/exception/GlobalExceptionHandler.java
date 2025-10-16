@@ -1,0 +1,162 @@
+package com.example.communityforum.exception;
+
+import com.example.communityforum.dto.ApiError;
+import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.validation.FieldError;
+import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.bind.MissingServletRequestParameterException;
+import org.springframework.web.bind.annotation.ControllerAdvice;
+import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.context.request.ServletWebRequest;
+import org.springframework.web.context.request.WebRequest;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
+import org.springframework.web.servlet.NoHandlerFoundException;
+
+import java.util.HashMap;
+import java.util.Map;
+import java.util.stream.Collectors;
+
+@ControllerAdvice
+public class GlobalExceptionHandler {
+
+    // Handle validation errors (@Valid)
+    @ExceptionHandler(MethodArgumentNotValidException.class)
+    public ResponseEntity<ApiError> handleValidationExceptions(MethodArgumentNotValidException ex, WebRequest request) {
+        Map<String, String> errors = ex.getBindingResult()
+                .getFieldErrors()
+                .stream()
+                .collect(Collectors.toMap(
+                        FieldError::getField,
+                        fieldError -> fieldError.getDefaultMessage() != null ?
+                                fieldError.getDefaultMessage() : "Validation error"
+                ));
+
+        ApiError apiError = new ApiError(
+                HttpStatus.BAD_REQUEST.value(),
+                HttpStatus.BAD_REQUEST.getReasonPhrase(),
+                "Validation failed",
+                errors
+        );
+        apiError.setPath(((ServletWebRequest) request).getRequest().getRequestURI());
+
+        return new ResponseEntity<>(apiError, HttpStatus.BAD_REQUEST);
+    }
+
+    // Handle Duplicate for unique values
+    @ExceptionHandler(DuplicateResourceException.class)
+    public ResponseEntity<ApiError> handleDuplicateResource(DuplicateResourceException ex, WebRequest request) {
+        Map<String, String> errors = new HashMap<>();
+        String message = ex.getMessage();
+
+        if (message.contains("Email")) {
+            errors.put("email", "Email is already in use");
+        } else if (message.contains("Username")) {
+            errors.put("username", "Username is already taken");
+        }
+
+        ApiError apiError = new ApiError(
+                HttpStatus.BAD_REQUEST.value(),
+                HttpStatus.BAD_REQUEST.getReasonPhrase(),
+                "Validation failed",
+                errors
+        );
+        apiError.setPath(((ServletWebRequest) request).getRequest().getRequestURI());
+
+        return new ResponseEntity<>(apiError, HttpStatus.BAD_REQUEST);
+    }
+
+    // Handle missing request body
+    @ExceptionHandler(HttpMessageNotReadableException.class)
+    public ResponseEntity<ApiError> handleHttpMessageNotReadable(HttpMessageNotReadableException ex, WebRequest request) {
+        String message = "Request body is required";
+
+        if (ex.getMessage() != null && ex.getMessage().contains("Required request body is missing")) {
+            message = "Request body is required";
+        }
+
+        ApiError apiError = new ApiError(
+                HttpStatus.BAD_REQUEST.value(),
+                HttpStatus.BAD_REQUEST.getReasonPhrase(),
+                message
+        );
+        apiError.setPath(((ServletWebRequest) request).getRequest().getRequestURI());
+
+        return new ResponseEntity<>(apiError, HttpStatus.BAD_REQUEST);
+    }
+
+    // Handle missing request parameters
+    @ExceptionHandler(MissingServletRequestParameterException.class)
+    public ResponseEntity<ApiError> handleMissingParams(MissingServletRequestParameterException ex, WebRequest request) {
+        Map<String, String> errors = new HashMap<>();
+        errors.put(ex.getParameterName(), "Required parameter is missing");
+
+        ApiError apiError = new ApiError(
+                HttpStatus.BAD_REQUEST.value(),
+                HttpStatus.BAD_REQUEST.getReasonPhrase(),
+                "Missing required parameter",
+                errors
+        );
+        apiError.setPath(((ServletWebRequest) request).getRequest().getRequestURI());
+
+        return new ResponseEntity<>(apiError, HttpStatus.BAD_REQUEST);
+    }
+
+    // Handle type mismatch exceptions
+    @ExceptionHandler(MethodArgumentTypeMismatchException.class)
+    public ResponseEntity<ApiError> handleTypeMismatch(MethodArgumentTypeMismatchException ex, WebRequest request) {
+        Map<String, String> errors = new HashMap<>();
+        String errorMessage = "Should be of type " +
+                (ex.getRequiredType() != null ? ex.getRequiredType().getSimpleName() : "unknown");
+        errors.put(ex.getName(), errorMessage);
+
+        ApiError apiError = new ApiError(
+                HttpStatus.BAD_REQUEST.value(),
+                HttpStatus.BAD_REQUEST.getReasonPhrase(),
+                "Type mismatch error",
+                errors
+        );
+        apiError.setPath(((ServletWebRequest) request).getRequest().getRequestURI());
+
+        return new ResponseEntity<>(apiError, HttpStatus.BAD_REQUEST);
+    }
+
+    // Handle database unique constraint violations
+    @ExceptionHandler(DataIntegrityViolationException.class)
+    public ResponseEntity<ApiError> handleDataIntegrityViolation(DataIntegrityViolationException ex, WebRequest request) {
+        String message = "Database error";
+        Map<String, String> errors = new HashMap<>();
+
+        if (ex.getRootCause() != null && ex.getRootCause().getMessage().contains("users_email_key")) {
+            message = "Data integrity violation";
+            errors.put("email", "Email is already in use");
+        }
+
+        ApiError apiError = new ApiError(
+                HttpStatus.BAD_REQUEST.value(),
+                HttpStatus.BAD_REQUEST.getReasonPhrase(),
+                message,
+                errors
+        );
+        apiError.setPath(((ServletWebRequest) request).getRequest().getRequestURI());
+
+        return new ResponseEntity<>(apiError, HttpStatus.BAD_REQUEST);
+    }
+
+    // Handle all other exceptions
+    @ExceptionHandler(Exception.class)
+    public ResponseEntity<ApiError> handleGeneralException(Exception ex, WebRequest request) {
+        String message = "An unexpected error occurred";
+
+        ApiError apiError = new ApiError(
+                HttpStatus.INTERNAL_SERVER_ERROR.value(),
+                HttpStatus.INTERNAL_SERVER_ERROR.getReasonPhrase(),
+                message
+        );
+        apiError.setPath(((ServletWebRequest) request).getRequest().getRequestURI());
+
+        return new ResponseEntity<>(apiError, HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+}

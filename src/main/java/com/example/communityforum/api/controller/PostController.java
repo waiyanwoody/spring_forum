@@ -42,12 +42,8 @@ public class PostController {
     //Update post by id
     @PutMapping("/{id}")
     public ResponseEntity<Post> updatePost(@PathVariable Long id, @RequestBody Post post) {
-        try {
             Post updatedPost = postService.updatePost(id, post);
             return ResponseEntity.ok(updatedPost);
-        } catch (RuntimeException e) {
-            return ResponseEntity.notFound().build();
-        }
     }
 
     //delete post by id

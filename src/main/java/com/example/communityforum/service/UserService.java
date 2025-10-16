@@ -1,7 +1,11 @@
 package com.example.communityforum.service;
 
+import com.example.communityforum.dto.UserRequestDTO;
+import com.example.communityforum.dto.UserResponseDTO;
+import com.example.communityforum.exception.DuplicateResourceException;
 import com.example.communityforum.persistence.entity.User;
 import com.example.communityforum.persistence.repository.UserRepository;
+import jakarta.validation.Valid;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -15,20 +19,37 @@ public class UserService {
         this.userRepository = userRepository;
     }
 
-    //create new user
-    public User createUser(User user) {
-        //validation here
-        return userRepository.save(user);
+    // create new user
+    public UserResponseDTO createUser(UserRequestDTO dto) {
+
+        if (userRepository.existsByUsername(dto.getUsername())) {
+            throw new DuplicateResourceException("Username is already in use");
+        }
+
+        if (userRepository.existsByEmail(dto.getEmail())) {
+            throw new DuplicateResourceException("Email is already in use");
+        }
+
+        User user = new User();
+        user.setUsername(dto.getUsername());
+        user.setEmail(dto.getEmail());
+        user.setPassword(dto.getPassword());
+        User savedUser = userRepository.save(user);
+        return new UserResponseDTO(savedUser.getId(), savedUser.getUsername(), savedUser.getEmail());
     }
 
     //get all users
-    public List<User> getAllUsers() {
-        return userRepository.findAll();
+    public List<UserResponseDTO> getAllUsers() {
+        return userRepository.findAll()
+                .stream()
+                .map(user -> new UserResponseDTO(user.getId(),user.getUsername(),user.getEmail()))
+                .toList();
     }
 
     //get user by ID
-    public Optional<User> getUserById(Long userId) {
-        return userRepository.findById(userId);
+    public Optional<UserResponseDTO> getUserById(Long userId) {
+        return userRepository.findById(userId)
+                .map(u -> new UserResponseDTO(u.getId(),u.getUsername(),u.getEmail()));
     }
 
     // Get user by email
