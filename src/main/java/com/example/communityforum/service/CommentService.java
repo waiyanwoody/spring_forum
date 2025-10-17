@@ -44,9 +44,6 @@ public class CommentService {
                 () -> new RuntimeException("post not found!")
         );
 
-        User user = userRepository.findById(currentUser.getId())
-                .orElseThrow(() -> new RuntimeException("User not found"));
-
         Comment parent = null;
         int depth = 1; // top-level comment = depth 1
 
@@ -66,7 +63,7 @@ public class CommentService {
         Comment comment = Comment.builder()
                 .text(dto.getText())
                 .post(post)
-                .user(user)
+                .user(currentUser)
                 .parentComment(parent)
                 .build();
 
@@ -94,6 +91,7 @@ public class CommentService {
         dto.setUserId(comment.getUser().getId());
         dto.setCreatedAt(comment.getCreatedAt());
 
+        // nested for replies
         if (comment.getReplies() != null && !comment.getReplies().isEmpty()) {
             dto.setReplies(comment.getReplies().stream()
                     .map(this::toResponse)
