@@ -8,6 +8,7 @@ import com.example.communityforum.persistence.entity.User;
 import com.example.communityforum.persistence.repository.CommentRepository;
 import com.example.communityforum.persistence.repository.PostRepository;
 import com.example.communityforum.persistence.repository.UserRepository;
+import com.example.communityforum.security.SecurityUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
@@ -20,11 +21,13 @@ public class CommentService {
     private final CommentRepository commentRepository;
     private final PostRepository postRepository;
     private final UserRepository userRepository;
+    private final SecurityUtils securityUtils;
 
-    public CommentService(CommentRepository commentRepository, PostRepository postRepository, UserRepository userRepository) {
+    public CommentService(CommentRepository commentRepository, PostRepository postRepository, UserRepository userRepository, SecurityUtils securityUtils) {
         this.commentRepository = commentRepository;
         this.postRepository = postRepository;
         this.userRepository = userRepository;
+        this.securityUtils = securityUtils;
     }
 
     // Get value from application.properties
@@ -33,11 +36,15 @@ public class CommentService {
 
     //create new comment
     public CommentResponseDTO addComment(CommentRequestDTO dto) {
+
+        // Get current authenticated user
+        User currentUser = securityUtils.getCurrentUser();
+
         Post post = postRepository.findById(dto.getPostId()).orElseThrow(
                 () -> new RuntimeException("post not found!")
         );
 
-        User user = userRepository.findById(dto.getUserId())
+        User user = userRepository.findById(currentUser.getId())
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
         Comment parent = null;
