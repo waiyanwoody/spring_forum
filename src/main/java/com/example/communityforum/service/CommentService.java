@@ -1,23 +1,109 @@
 package com.example.communityforum.service;
 
+import com.example.communityforum.dto.comment.CommentRequestDTO;
+import com.example.communityforum.dto.comment.CommentResponseDTO;
 import com.example.communityforum.persistence.entity.Comment;
 import com.example.communityforum.persistence.entity.Post;
+import com.example.communityforum.persistence.entity.User;
 import com.example.communityforum.persistence.repository.CommentRepository;
+import com.example.communityforum.persistence.repository.PostRepository;
+import com.example.communityforum.persistence.repository.UserRepository;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
 public class CommentService {
     private final CommentRepository commentRepository;
-    public CommentService(CommentRepository commentRepository) {
+    private final PostRepository postRepository;
+    private final UserRepository userRepository;
+
+    public CommentService(CommentRepository commentRepository, PostRepository postRepository, UserRepository userRepository) {
         this.commentRepository = commentRepository;
+        this.postRepository = postRepository;
+        this.userRepository = userRepository;
     }
 
+    // Get value from application.properties
+    @Value("${comment.max-depth:2}")
+    private int maxDepth;
+
     //create new comment
-    public Comment addComment(Comment comment) {
-        return commentRepository.save(comment);
+    public CommentResponseDTO addComment(CommentRequestDTO dto) {
+        Post post = postRepository.findById(dto.getPostId()).orElseThrow(
+                () -> new RuntimeException("post not found!")
+        );
+
+        User user = userRepository.findById(dto.getUserId())
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        Comment parent = null;
+        int depth = 1; // top-level comment = depth 1
+
+        //for reply
+        if(dto.getParentCommentId() != null) {
+            parent = commentRepository.findById(dto.getParentCommentId()).orElseThrow(
+                    () -> new RuntimeException("Parent comment not found")
+            );
+
+            depth = calculateDepth(parent) + 1;
+
+            if (depth > maxDepth) {
+                throw new RuntimeException("Maximum reply depth (" + maxDepth + ") reached");
+            }
+        }
+
+        Comment comment = Comment.builder()
+                .text(dto.getText())
+                .post(post)
+                .user(user)
+                .parentComment(parent)
+                .build();
+
+        Comment saved = commentRepository.save(comment);
+        return toResponse(saved);
+    }
+
+    // find root comments of post
+    public List<CommentResponseDTO> getCommentsByPost(Long postId) {
+        Post post = postRepository.findById(postId)
+                .orElseThrow(() -> new RuntimeException("Post not found"));
+        List<Comment> comments = commentRepository.findByPostAndParentCommentIsNull(post);
+
+        return comments.stream()
+                .map(this::toResponse)
+                .collect(Collectors.toList());
+    }
+
+    // to wrap to response dto
+    private CommentResponseDTO toResponse(Comment comment) {
+        CommentResponseDTO dto = new CommentResponseDTO();
+        dto.setId(comment.getId());
+        dto.setContent(comment.getText());
+        dto.setUsername(comment.getUser().getUsername());
+        dto.setUserId(comment.getUser().getId());
+        dto.setCreatedAt(comment.getCreatedAt());
+
+        if (comment.getReplies() != null && !comment.getReplies().isEmpty()) {
+            dto.setReplies(comment.getReplies().stream()
+                    .map(this::toResponse)
+                    .collect(Collectors.toList()));
+        }
+        return dto;
+    }
+
+    // calculate current depth of comment and return
+    private int calculateDepth(Comment parentComment) {
+        int depth = 1;
+        Comment current =  parentComment;
+        while(current.getParentComment() != null) {
+            depth++;
+            current = current.getParentComment();
+        }
+        return depth;
     }
 
     //get all comments
@@ -26,8 +112,12 @@ public class CommentService {
     }
 
     //get comment by ID
-    public Optional<Comment> getCommentById(Long id) {
-        return commentRepository.findById(id);
+    public CommentResponseDTO getCommentById(Long id) {
+        Comment comment = commentRepository.findById(id)
+                .orElseThrow(
+                        () -> new RuntimeException("comment not found!")
+                );
+        return toResponse(comment);
     }
 
     //get comment by post ID

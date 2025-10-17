@@ -1,7 +1,10 @@
 package com.example.communityforum.api.controller;
 
+import com.example.communityforum.dto.comment.CommentRequestDTO;
+import com.example.communityforum.dto.comment.CommentResponseDTO;
 import com.example.communityforum.persistence.entity.Comment;
 import com.example.communityforum.service.CommentService;
+import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -32,25 +35,19 @@ public class CommentController {
 
     //get comment by ID
     @GetMapping("/{id}")
-    public ResponseEntity<Comment> getCommentById(@PathVariable Long id) {
-        try {
-            Optional<Comment> comment = commentService.getCommentById(id);
-            return comment.map(ResponseEntity::ok)
-                    .orElse(ResponseEntity.notFound().build());
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
-        }
+    public ResponseEntity<CommentResponseDTO> getCommentById(@PathVariable Long id) {
+        CommentResponseDTO commentResponseDTO = commentService.getCommentById(id);
+        return ResponseEntity.ok(commentResponseDTO);
     }
 
-    // CREATE NEW COMMENT
     @PostMapping
-    public ResponseEntity<Comment> createComment(@RequestBody Comment comment) {
-        try {
-            Comment savedComment = commentService.addComment(comment);
-            return ResponseEntity.status(HttpStatus.CREATED).body(savedComment);
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
-        }
+    public CommentResponseDTO createComment(@Valid @RequestBody CommentRequestDTO dto) {
+        return commentService.addComment(dto);
+    }
+
+    @GetMapping("/post/{postId}")
+    public List<CommentResponseDTO> getCommentsByPost(@PathVariable Long postId) {
+        return commentService.getCommentsByPost(postId);
     }
 
     // UPDATE COMMENT
@@ -72,17 +69,6 @@ public class CommentController {
         try {
             commentService.deleteComment(id);
             return ResponseEntity.noContent().build();
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
-        }
-    }
-
-    // GET COMMENTS BY POST ID
-    @GetMapping("/post/{postId}")
-    public ResponseEntity<List<Comment>> getCommentsByPostId(@PathVariable Long postId) {
-        try {
-            List<Comment> comments = commentService.getCommentsByPostId(postId);
-            return ResponseEntity.ok(comments);
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }

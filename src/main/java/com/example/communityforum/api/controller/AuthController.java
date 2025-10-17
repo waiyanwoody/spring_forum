@@ -1,8 +1,8 @@
 package com.example.communityforum.api.controller;
 
-import com.example.communityforum.dto.AuthRequest;
-import com.example.communityforum.dto.AuthResponse;
-import com.example.communityforum.dto.UserRequestDTO;
+import com.example.communityforum.dto.auth.AuthRequest;
+import com.example.communityforum.dto.auth.AuthResponse;
+import com.example.communityforum.dto.user.UserRequestDTO;
 import com.example.communityforum.exception.DuplicateResourceException;
 import com.example.communityforum.persistence.entity.User;
 import com.example.communityforum.persistence.repository.UserRepository;

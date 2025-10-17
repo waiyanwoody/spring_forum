@@ -1,4 +1,4 @@
-package com.example.communityforum.dto;
+package com.example.communityforum.dto.auth;
 
 public class AuthResponse {
     private String token;

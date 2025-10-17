@@ -1,8 +1,10 @@
 package com.example.communityforum.persistence.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.*;
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Entity
 @Table(name = "comments")
@@ -26,4 +28,15 @@ public class Comment {
     @ManyToOne
     @JoinColumn(name = "user_id")
     private User user;
+
+    //parent comment for replies
+    @ManyToOne
+    @JoinColumn(name= "parent_comment_id")
+    @JsonIgnore
+    private Comment parentComment;
+
+    //children replies for parent
+    @OneToMany(mappedBy = "parentComment",cascade = CascadeType.ALL,orphanRemoval = true)
+    private List<Comment> replies;
+
 }

@@ -1,4 +1,4 @@
-package com.example.communityforum.dto;
+package com.example.communityforum.dto.user;
 
 public class UserResponseDTO {
     public Long getId() {

@@ -1,11 +1,10 @@
 package com.example.communityforum.service;
 
-import com.example.communityforum.dto.UserRequestDTO;
-import com.example.communityforum.dto.UserResponseDTO;
+import com.example.communityforum.dto.user.UserRequestDTO;
+import com.example.communityforum.dto.user.UserResponseDTO;
 import com.example.communityforum.exception.DuplicateResourceException;
 import com.example.communityforum.persistence.entity.User;
 import com.example.communityforum.persistence.repository.UserRepository;
-import jakarta.validation.Valid;
 import org.springframework.stereotype.Service;
 
 import java.util.List;

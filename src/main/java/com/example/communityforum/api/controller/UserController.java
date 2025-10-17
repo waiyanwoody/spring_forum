@@ -1,7 +1,7 @@
 package com.example.communityforum.api.controller;
 
-import com.example.communityforum.dto.UserRequestDTO;
-import com.example.communityforum.dto.UserResponseDTO;
+import com.example.communityforum.dto.user.UserRequestDTO;
+import com.example.communityforum.dto.user.UserResponseDTO;
 import com.example.communityforum.persistence.entity.User;
 import com.example.communityforum.service.UserService;
 import jakarta.validation.Valid;
@@ -11,7 +11,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/users")
+@RequestMapping("/api/admin/users")
 @CrossOrigin(origins = "*") // Allow frontend access (optional)
 public class UserController {
 
