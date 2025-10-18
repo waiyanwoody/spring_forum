@@ -15,4 +15,10 @@ public interface LikeRepository extends JpaRepository<Like, Long> {
 
     long countByPost(Post post);
     long countByComment(Comment comment);
+
+    // For post likes
+    long countByPostId(Long postId);
+
+    // For comment likes
+    long countByCommentId(Long commentId);
 }

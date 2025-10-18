@@ -1,9 +1,11 @@
 package com.example.communityforum.service;
 
+import com.example.communityforum.dto.PostResponseDTO;
 import com.example.communityforum.exception.PermissionDeniedException;
 import com.example.communityforum.exception.ResourceNotFoundException;
 import com.example.communityforum.persistence.entity.Post;
 import com.example.communityforum.persistence.entity.User;
+import com.example.communityforum.persistence.repository.LikeRepository;
 import com.example.communityforum.persistence.repository.PostRepository;
 import com.example.communityforum.security.SecurityUtils;
 import org.springframework.data.domain.Page;
@@ -22,19 +24,46 @@ public class PostService {
 
     private final PostRepository postRepository;
     private final SecurityUtils securityUtils;
+    private final LikeRepository  likeRepository;
 
-    public PostService(PostRepository postRepository, SecurityUtils securityUtils) {
+    public PostService(PostRepository postRepository, SecurityUtils securityUtils,  LikeRepository likeRepository) {
         this.postRepository = postRepository;
         this.securityUtils = securityUtils;
+        this.likeRepository = likeRepository;
     }
 
-    public Page<Post> getAllPosts(Pageable pageable) {
-        return postRepository.findAll(pageable);
+    public Page<PostResponseDTO> getAllPosts(Pageable pageable) {
+        Page<Post> posts = postRepository.findAll(pageable);
+
+        User user = securityUtils.getCurrentUser();
+
+        return posts.map(post -> mapToPostResponseDTO(post, user));
+
     }
 
-    public Optional<Post> getPostById(Long id) {
-        return postRepository.findById(id);
+    public PostResponseDTO getPostById(Long id) {
+        Post post = postRepository.findById(id).orElseThrow( () -> new ResourceNotFoundException("Post",id));
+
+        User user = securityUtils.getCurrentUser();
+
+       return mapToPostResponseDTO(post,user);
     }
+
+    //map post to post response dto
+    private PostResponseDTO mapToPostResponseDTO(Post post, User currentUser) {
+        long likeCount = likeRepository.countByPostId(post.getId());
+        boolean liked = currentUser != null && likeRepository.existsByUserAndPost(currentUser, post);
+
+        return PostResponseDTO.builder()
+                .id(post.getId())
+                .title(post.getTitle())
+                .content(post.getContent())
+                .createdAt(post.getCreatedAt())
+                .likeCount(likeCount)
+                .liked(liked)
+                .build();
+    }
+
 
     public boolean deletePost(Long id) {
         if (postRepository.existsById(id)) {

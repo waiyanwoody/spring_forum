@@ -33,20 +33,15 @@ public class PostController {
     public ResponseEntity<Page<PostResponseDTO>> getAllPosts(
             @PageableDefault(page = 0, size = 5, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable
     ) {
-        Page<Post> page =  postService.getAllPosts(pageable);
+        Page<PostResponseDTO> response = postService.getAllPosts(pageable);
 
-        // Convert Entity -> DTO
-        Page<PostResponseDTO> dtoPage = page.map(post ->
-                new PostResponseDTO(post.getId(), post.getTitle(), post.getContent(), post.getCreatedAt())
-        );
-
-        return ResponseEntity.ok(dtoPage);
+        return ResponseEntity.ok(response);
     }
 
     //Get one post by id
     @GetMapping("/{id}")
-    public ResponseEntity<Post> getPostById(@PathVariable Long id) {
-        return postService.getPostById(id).map(ResponseEntity::ok).orElse(ResponseEntity.notFound().build());
+    public ResponseEntity<PostResponseDTO> getPostById(@PathVariable Long id) {
+        return ResponseEntity.ok(postService.getPostById(id));
     }
 
     //Create a post
