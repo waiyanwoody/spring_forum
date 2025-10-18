@@ -29,6 +29,7 @@ public class SecurityConfig {
                         .requestMatchers("/auth/register","/auth/login").permitAll() // public routes
                         .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")
+                        .requestMatchers("/auth/me").authenticated()
                         .requestMatchers("/api/user/**").hasAnyRole("USER", "ADMIN")
                         .anyRequest().authenticated() // everything else requires JWT
                 )

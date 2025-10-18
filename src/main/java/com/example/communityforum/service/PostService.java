@@ -1,126 +1,131 @@
 package com.example.communityforum.service;
 
-import com.example.communityforum.dto.PostResponseDTO;
+import com.example.communityforum.dto.post.PostListResponseDTO;
+import com.example.communityforum.dto.post.PostRequestDTO;
+import com.example.communityforum.dto.post.PostDetailResponseDTO;
 import com.example.communityforum.exception.PermissionDeniedException;
 import com.example.communityforum.exception.ResourceNotFoundException;
+import com.example.communityforum.mapper.PostMapper;
 import com.example.communityforum.persistence.entity.Post;
 import com.example.communityforum.persistence.entity.User;
 import com.example.communityforum.persistence.repository.LikeRepository;
 import com.example.communityforum.persistence.repository.PostRepository;
 import com.example.communityforum.security.SecurityUtils;
+import lombok.AllArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
-import java.util.List;
-import java.util.Optional;
 
+@AllArgsConstructor
 @Service
 public class PostService {
 
     private final PostRepository postRepository;
     private final SecurityUtils securityUtils;
     private final LikeRepository  likeRepository;
+    private final PostMapper  postMapper;
 
-    public PostService(PostRepository postRepository, SecurityUtils securityUtils,  LikeRepository likeRepository) {
-        this.postRepository = postRepository;
-        this.securityUtils = securityUtils;
-        this.likeRepository = likeRepository;
-    }
 
-    public Page<PostResponseDTO> getAllPosts(Pageable pageable) {
+    public Page<PostListResponseDTO> getAllPosts(Pageable pageable) {
         Page<Post> posts = postRepository.findAll(pageable);
 
         User user = securityUtils.getCurrentUser();
 
-        return posts.map(post -> mapToPostResponseDTO(post, user));
+        return posts.map(post -> postMapper.toListDTO(post, user));
 
     }
 
-    public PostResponseDTO getPostById(Long id) {
+    public PostDetailResponseDTO getPostById(Long id) {
         Post post = postRepository.findById(id).orElseThrow( () -> new ResourceNotFoundException("Post",id));
 
         User user = securityUtils.getCurrentUser();
 
-       return mapToPostResponseDTO(post,user);
+       return postMapper.toDetailDTO(post,user);
     }
 
-    //map post to post response dto
-    private PostResponseDTO mapToPostResponseDTO(Post post, User currentUser) {
-        long likeCount = likeRepository.countByPostId(post.getId());
-        boolean liked = currentUser != null && likeRepository.existsByUserAndPost(currentUser, post);
-
-        return PostResponseDTO.builder()
-                .id(post.getId())
-                .title(post.getTitle())
-                .content(post.getContent())
-                .createdAt(post.getCreatedAt())
-                .likeCount(likeCount)
-                .liked(liked)
-                .build();
+    public PostDetailResponseDTO addPost(PostRequestDTO request) {
+        User currentUser = securityUtils.getCurrentUser();
+        Post post = new Post();
+        post.setTitle(request.getTitle());
+        post.setContent(request.getContent());
+        //ensure post has owner
+        post.setUser(currentUser);
+        post.setCreatedAt(LocalDateTime.now());
+        postRepository.save(post);
+        return postMapper.toDetailDTO(post,currentUser);
     }
 
-
-    public boolean deletePost(Long id) {
-        if (postRepository.existsById(id)) {
-            postRepository.deleteById(id);
-            return true;
-        } else {
-            return false;
-        }
-    }
-
-    public Post updatePost(long id, Post post) {
+    // update post
+//    @PreAuthorize("hasRole('ADMIN') or @securityUtils.isOwner(@postRepository.findById(#postId).orElse(null))")
+    public PostDetailResponseDTO updatePost(long id, PostRequestDTO request) {
         Post existingPost = postRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Post", id));
-        existingPost.setTitle(post.getTitle());
-        existingPost.setContent(post.getContent());
-        existingPost.setUser(post.getUser());
-        return postRepository.save(existingPost);
+
+        // security check
+        securityUtils.checkOwnerOrAdmin(existingPost);
+
+        // update only allowed fields
+        existingPost.setTitle(request.getTitle());
+        existingPost.setContent(request.getContent());
+
+        postRepository.save(existingPost);
+
+        return postMapper.toDetailDTO(existingPost,securityUtils.getCurrentUser());
     }
 
-    public Post addPost(Post post) {
-        return postRepository.save(post); // ID auto-generated
-    }
 
     //soft delete post for admin or owner
-    @PreAuthorize("hasRole('ADMIN') or @securityUtils.isOwner(@postRepository.findById(#postId).orElse(null))")
+//    @PreAuthorize("hasRole('ADMIN') or @securityUtils.isOwner(@postRepository.findById(#postId).orElse(null))")
     @Transactional
     public void softDeletePost(Long postId) {
         Post post = postRepository.findById(postId)
                 .orElseThrow(() -> new ResourceNotFoundException("Post", postId));
 
         User currentUser = securityUtils.getCurrentUser();
-        boolean isOwner = post.getUser().getId().equals(currentUser.getId());
-        boolean isAdmin = "ADMIN".equals(currentUser.getRole());
 
-        if (!isOwner && !isAdmin) {
-            throw new PermissionDeniedException("You don't have permission to delete this post");
-        }
+        // security check
+        securityUtils.checkOwnerOrAdmin(post);
 
         post.setDeletedAt(LocalDateTime.now());
         post.setDeletedBy(currentUser);
         postRepository.save(post);
     }
 
-    @PreAuthorize("hasRole('ADMIN') or @securityUtils.isOwner(@postRepository.findById(#postId).orElse(null))")
+    // restore soft-deleted post
+//    @PreAuthorize("hasRole('ADMIN') or @securityUtils.isOwner(@postRepository.findById(#postId).orElse(null))")
     @Transactional
-    public void restorePost(Long postId) {
-        Post post = postRepository.findByIdIncludeDeleted(postId)
-                .orElseThrow(() -> new ResourceNotFoundException("Post", postId));
+    public PostDetailResponseDTO restorePost(Long postId) {
+
+        Post post = postRepository.findDeletedById(postId)
+                .orElseThrow(() -> new ResourceNotFoundException("Soft-deleted Post", postId));
+
+        User currentUser = securityUtils.getCurrentUser();
+
+        // security check
+        securityUtils.checkOwnerOrAdmin(post);
+
         post.setDeletedAt(null);
         post.setDeletedBy(null);
         postRepository.save(post);
+
+        return postMapper.toDetailDTO(post,currentUser);
     }
 
-    @PreAuthorize("hasRole('ADMIN') or @securityUtils.isOwner(@postRepository.findById(#postId).orElse(null))")
+    // hard delete post
+//    @PreAuthorize("hasRole('ADMIN') or @securityUtils.isOwner(@postRepository.findById(#postId).orElse(null))")
     @Transactional
     public void hardDeletePost(Long postId) {
-        // permanent removal (admin only)
+        Post post = postRepository.findById(postId)
+                .orElseThrow(() -> new ResourceNotFoundException("Post", postId));
+
+        // security check
+        securityUtils.checkOwnerOrAdmin(post);
+
+        // permanent removal
         postRepository.deleteById(postId);
     }
 }

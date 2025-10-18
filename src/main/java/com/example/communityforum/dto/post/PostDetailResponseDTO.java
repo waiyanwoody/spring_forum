@@ -1,7 +1,6 @@
-package com.example.communityforum.dto;
+package com.example.communityforum.dto.post;
 
-import com.example.communityforum.persistence.entity.Post;
-import jakarta.persistence.Column;
+import com.example.communityforum.dto.user.UserResponseDTO;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -13,12 +12,15 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class PostResponseDTO {
+public class PostDetailResponseDTO {
 
     private Long id;
     private String title;
     private String content;
     private LocalDateTime createdAt = LocalDateTime.now();
+
+    private UserResponseDTO user;
+
     private long likeCount;
     private boolean liked;
 

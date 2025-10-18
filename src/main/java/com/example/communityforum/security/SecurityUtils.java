@@ -1,5 +1,6 @@
 package com.example.communityforum.security;
 
+import com.example.communityforum.exception.PermissionDeniedException;
 import com.example.communityforum.persistence.entity.User;
 import com.example.communityforum.persistence.repository.UserRepository;
 import org.springframework.security.core.Authentication;
@@ -71,5 +72,19 @@ public class SecurityUtils {
             // Method not found or invocation failed
             return false;
         }
+    }
+
+    /**
+     * Check if current user is admin or owner of entity
+     */
+    public void checkOwnerOrAdmin(Object entity) {
+        if (!isAdmin() && !isOwner(entity)) {
+            throw new PermissionDeniedException("You do not have permission to perform this action.");
+        }
+    }
+
+    public boolean isAdmin() {
+        User currentUser = getCurrentUser();
+        return currentUser.getRole().equals("ADMIN");
     }
 }

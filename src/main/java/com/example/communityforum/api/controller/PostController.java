@@ -1,10 +1,11 @@
 package com.example.communityforum.api.controller;
 
-import com.example.communityforum.dto.PostResponseDTO;
+import com.example.communityforum.dto.post.PostListResponseDTO;
+import com.example.communityforum.dto.post.PostRequestDTO;
+import com.example.communityforum.dto.post.PostDetailResponseDTO;
 import com.example.communityforum.persistence.entity.Post;
-import com.example.communityforum.security.SecurityUtils;
 import com.example.communityforum.service.PostService;
-import org.apache.coyote.Response;
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -12,11 +13,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.security.core.parameters.P;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
 
 @RestController
 @RequestMapping("/api/posts")
@@ -30,32 +27,30 @@ public class PostController {
 
     //Get all Posts
     @GetMapping
-    public ResponseEntity<Page<PostResponseDTO>> getAllPosts(
+    public ResponseEntity<Page<PostListResponseDTO>> getAllPosts(
             @PageableDefault(page = 0, size = 5, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable
     ) {
-        Page<PostResponseDTO> response = postService.getAllPosts(pageable);
+        Page<PostListResponseDTO> response = postService.getAllPosts(pageable);
 
         return ResponseEntity.ok(response);
     }
 
     //Get one post by id
     @GetMapping("/{id}")
-    public ResponseEntity<PostResponseDTO> getPostById(@PathVariable Long id) {
+    public ResponseEntity<PostDetailResponseDTO> getPostById(@PathVariable Long id) {
         return ResponseEntity.ok(postService.getPostById(id));
     }
 
     //Create a post
     @PostMapping
-    public String addPost(@RequestBody Post post) {
-        postService.addPost(post);
-        return "Post added successfully";
+    public PostDetailResponseDTO addPost(@Valid @RequestBody PostRequestDTO request) {
+        return postService.addPost(request);
     }
 
     //Update post by id
     @PutMapping("/{id}")
-    public ResponseEntity<Post> updatePost(@PathVariable Long id, @RequestBody Post post) {
-            Post updatedPost = postService.updatePost(id, post);
-            return ResponseEntity.ok(updatedPost);
+    public PostDetailResponseDTO updatePost(@PathVariable Long id, @RequestBody PostRequestDTO request) {
+            return postService.updatePost(id,request);
     }
 
     // DELETE -> soft delete current user's or admin
@@ -68,9 +63,8 @@ public class PostController {
     // POST -> restore current user's or admin
     @PostMapping("/{id}/restore")
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<Void> restorePost(@PathVariable Long id) {
-        postService.restorePost(id);
-        return ResponseEntity.ok().build();
+    public PostDetailResponseDTO restorePost(@PathVariable Long id) {
+        return  postService.restorePost(id);
     }
 
     // DELETE hard-delete current user's or admin

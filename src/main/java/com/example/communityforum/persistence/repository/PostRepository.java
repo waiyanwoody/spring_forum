@@ -19,7 +19,8 @@ public interface PostRepository extends JpaRepository<Post, Long> {
     @Query("select p from Post p where p.deletedAt is null order by p.createdAt desc")
     Page<Post> findAllNotDeleted(Pageable pageable);
 
-    @Query(value = "SELECT * FROM posts WHERE id = :id", nativeQuery = true)
-    Optional<Post> findByIdIncludeDeleted(@Param("id") Long id);
+    @Query(value = "SELECT * FROM posts WHERE id = :id AND deleted_at IS NOT NULL", nativeQuery = true)
+    Optional<Post> findDeletedById(@Param("id") Long id);
+
 
 }

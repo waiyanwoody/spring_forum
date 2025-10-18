@@ -3,21 +3,22 @@ package com.example.communityforum.api.controller;
 import com.example.communityforum.dto.auth.AuthRequest;
 import com.example.communityforum.dto.auth.AuthResponse;
 import com.example.communityforum.dto.user.UserRequestDTO;
+import com.example.communityforum.dto.user.UserResponseDTO;
 import com.example.communityforum.exception.DuplicateResourceException;
 import com.example.communityforum.persistence.entity.User;
 import com.example.communityforum.persistence.repository.UserRepository;
 import com.example.communityforum.security.JwtUtil;
+import com.example.communityforum.security.SecurityUtils;
 import jakarta.validation.Valid;
+import org.apache.catalina.security.SecurityUtil;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 
 @RestController
@@ -35,6 +36,24 @@ public class AuthController {
 
     @Autowired
     private PasswordEncoder passwordEncoder;
+
+    @Autowired
+    private SecurityUtils securityUtils;
+
+    @GetMapping("/me")
+    public ResponseEntity<UserResponseDTO> getCurrentUser() {
+        User currentUser = securityUtils.getCurrentUser(); // fetch logged-in user
+
+        // Map to DTO (you can use a mapper if available)
+        UserResponseDTO userDTO = UserResponseDTO.builder()
+                .id(currentUser.getId())
+                .username(currentUser.getUsername())
+                .email(currentUser.getEmail())
+                .role(currentUser.getRole())
+                .build();
+
+        return ResponseEntity.ok(userDTO);
+    }
 
     // -- Register --
     @PostMapping("/register")

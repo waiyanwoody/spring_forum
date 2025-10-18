@@ -1,6 +1,7 @@
 package com.example.communityforum.service;
 
 import com.example.communityforum.dto.LikeRequestDTO;
+import com.example.communityforum.exception.ResourceNotFoundException;
 import com.example.communityforum.persistence.entity.*;
 import com.example.communityforum.persistence.repository.*;
 import com.example.communityforum.security.SecurityUtils;
@@ -35,7 +36,7 @@ public class LikeService {
 
         if (request.getTargetType() == LikeRequestDTO.TargetType.POST) {
             Post post = postRepository.findById(request.getTargetId())
-                    .orElseThrow(() -> new RuntimeException("Post not found"));
+                    .orElseThrow(() -> new ResourceNotFoundException("Post",request.getTargetId()));
             if (likeRepository.existsByUserAndPost(currentUser, post)) {
                 likeRepository.deleteByUserAndPost(currentUser, post);
                 return false;
@@ -47,7 +48,7 @@ public class LikeService {
 
         if (request.getTargetType() == LikeRequestDTO.TargetType.COMMENT) {
             Comment comment = commentRepository.findById(request.getTargetId())
-                    .orElseThrow(() -> new RuntimeException("Comment not found"));
+                    .orElseThrow(() -> new ResourceNotFoundException("Comment",request.getTargetId()));
             if (likeRepository.existsByUserAndComment(currentUser, comment)) {
                 likeRepository.deleteByUserAndComment(currentUser, comment);
                 return false;
@@ -62,13 +63,13 @@ public class LikeService {
 
     public long getPostLikeCount(Long postId) {
         Post post = postRepository.findById(postId)
-                .orElseThrow(() -> new RuntimeException("Post not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Post",postId));
         return likeRepository.countByPost(post);
     }
 
     public long getCommentLikeCount(Long commentId) {
         Comment comment = commentRepository.findById(commentId)
-                .orElseThrow(() -> new RuntimeException("Comment not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Comment",commentId));
         return likeRepository.countByComment(comment);
     }
 }
