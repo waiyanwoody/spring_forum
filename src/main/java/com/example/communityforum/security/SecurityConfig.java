@@ -27,14 +27,17 @@ public class SecurityConfig {
         http.csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/auth/register","/auth/login").permitAll() // public routes
-                        .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()
+
+                        // Swagger docs (require Basic Auth)
+                        .requestMatchers("/docs", "/swagger-ui/**", "/v3/api-docs/**").authenticated()
+
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")
                         .requestMatchers("/auth/me").authenticated()
                         .requestMatchers("/api/user/**").hasAnyRole("USER", "ADMIN")
                         .anyRequest().authenticated() // everything else requires JWT
                 )
                 .formLogin(form -> form.disable())
-                .httpBasic(basic -> basic.disable())
+                .httpBasic(basic -> {})
                 .logout(logout -> logout.disable());
 
         http.addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
