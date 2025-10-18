@@ -2,6 +2,7 @@ package com.example.communityforum.api.controller;
 
 import com.example.communityforum.dto.PostResponseDTO;
 import com.example.communityforum.persistence.entity.Post;
+import com.example.communityforum.security.SecurityUtils;
 import com.example.communityforum.service.PostService;
 import org.apache.coyote.Response;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -10,6 +11,8 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.parameters.P;
 import org.springframework.web.bind.annotation.*;
 
@@ -60,15 +63,27 @@ public class PostController {
             return ResponseEntity.ok(updatedPost);
     }
 
-    //delete post by id
+    // DELETE -> soft delete current user's or admin
     @DeleteMapping("/{id}")
-    public ResponseEntity<String> deletePost(@PathVariable Long id) {
-        boolean deleted = postService.deletePost(id);
-        if(deleted) {
-            return  ResponseEntity.ok("Post deleted successfully");
-        }else  {
-            return ResponseEntity.notFound().build();
-        }
+    public ResponseEntity<Void> deletePost(@PathVariable Long id) {
+        postService.softDeletePost(id);
+        return ResponseEntity.noContent().build();
+    }
+
+    // POST -> restore current user's or admin
+    @PostMapping("/{id}/restore")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<Void> restorePost(@PathVariable Long id) {
+        postService.restorePost(id);
+        return ResponseEntity.ok().build();
+    }
+
+    // DELETE hard-delete current user's or admin
+    @DeleteMapping("/{id}/hard")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<Void> hardDeletePost(@PathVariable Long id) {
+        postService.hardDeletePost(id);
+        return ResponseEntity.noContent().build();
     }
 
 }

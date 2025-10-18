@@ -153,6 +153,32 @@ public class GlobalExceptionHandler {
         return new ResponseEntity<>(apiError, HttpStatus.BAD_REQUEST);
     }
 
+    // Handle resource not found
+    @ExceptionHandler(ResourceNotFoundException.class)
+    public ResponseEntity<ApiError> handleResourceNotFound(ResourceNotFoundException ex, WebRequest request) {
+        ApiError apiError = new ApiError(
+                HttpStatus.NOT_FOUND.value(),
+                HttpStatus.NOT_FOUND.getReasonPhrase(),
+                ex.getMessage()
+        );
+        apiError.setPath(((ServletWebRequest) request).getRequest().getRequestURI());
+
+        return new ResponseEntity<>(apiError, HttpStatus.NOT_FOUND);
+    }
+
+    // Handle permission denied
+    @ExceptionHandler(PermissionDeniedException.class)
+    public ResponseEntity<ApiError> handlePermissionDenied(PermissionDeniedException ex, WebRequest request) {
+        ApiError apiError = new ApiError(
+                HttpStatus.FORBIDDEN.value(),
+                HttpStatus.FORBIDDEN.getReasonPhrase(),
+                ex.getMessage()
+        );
+        apiError.setPath(((ServletWebRequest) request).getRequest().getRequestURI());
+
+        return new ResponseEntity<>(apiError, HttpStatus.FORBIDDEN);
+    }
+
     // Handle all other exceptions
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ApiError> handleGeneralException(Exception ex, WebRequest request) {

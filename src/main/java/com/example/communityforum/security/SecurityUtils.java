@@ -7,7 +7,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Component;
 
-@Component
+@Component("securityUtils")
 public class SecurityUtils {
     private final UserRepository userRepository;
 
@@ -53,5 +53,23 @@ public class SecurityUtils {
     public String getCurrentUsername() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         return authentication.getName();
+    }
+
+    /**
+     * Generic owner check for any entity that has a getUser() method
+     */
+    public boolean isOwner(Object entity) {
+        if (entity == null) return false;
+
+        User currentUser = getCurrentUser();
+
+        try {
+            // Try to call getUser() using reflection
+            User owner = (User) entity.getClass().getMethod("getUser").invoke(entity);
+            return owner != null && owner.getId().equals(currentUser.getId());
+        } catch (Exception e) {
+            // Method not found or invocation failed
+            return false;
+        }
     }
 }

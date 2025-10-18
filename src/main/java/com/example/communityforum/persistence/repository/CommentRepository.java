@@ -17,4 +17,7 @@ public interface CommentRepository extends JpaRepository<Comment, Long> {
     // Replies for a specific comment
     List<Comment> findByParentCommentId(Long parentCommentId);
 
+    List<Comment> findByPostAndParentCommentIsNullAndDeletedAtIsNull(Post post);
+
+
 }

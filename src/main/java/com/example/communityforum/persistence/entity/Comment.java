@@ -5,9 +5,18 @@ import jakarta.persistence.*;
 import lombok.*;
 import java.time.LocalDateTime;
 import java.util.List;
+import org.hibernate.annotations.SQLDelete;
+import org.hibernate.annotations.Where;
 
 @Entity
-@Table(name = "comments")
+@Table(
+        name = "comments",
+        indexes = {
+                @Index(name = "idx_comments_deleted_at", columnList = "deleted_at"),
+                @Index(name = "idx_comments_deleted_by", columnList =  "deleted_by")
+        }
+)
+@Where(clause = "deleted_at IS NULL")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -38,5 +47,13 @@ public class Comment {
     //children replies for parent
     @OneToMany(mappedBy = "parentComment",cascade = CascadeType.ALL,orphanRemoval = true)
     private List<Comment> replies;
+
+    //for soft delete
+    @Column(name = "deleted_at")
+    private LocalDateTime deletedAt;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "deleted_by")
+    private User deletedBy;
 
 }
