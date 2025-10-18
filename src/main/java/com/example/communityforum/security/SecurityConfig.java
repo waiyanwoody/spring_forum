@@ -29,7 +29,7 @@ public class SecurityConfig {
                         .requestMatchers("/auth/register","/auth/login").permitAll() // public routes
 
                         // Swagger docs (require Basic Auth)
-                        .requestMatchers("/docs", "/swagger-ui/**", "/v3/api-docs/**").authenticated()
+                        .requestMatchers("/docs", "/swagger-ui/**", "/v3/api-docs/**").hasRole("ADMIN")
 
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")
                         .requestMatchers("/auth/me").authenticated()
