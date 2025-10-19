@@ -6,6 +6,6 @@ import lombok.*;
 public class PostSummaryDTO {
     private Long id;
     private String title;
-    private String content;
+    private String excerpt;
     private String createdAt;
 }

@@ -73,7 +73,12 @@ public class DataSeeder implements CommandLineRunner {
                     .mapToObj(i -> {
                         Post p = new Post();
                         p.setTitle(safeSubstring(faker.book().title(), 200));
-                        p.setContent(safeSubstring(faker.lorem().sentence(5, 10), 1000));
+
+                        // Generate 3-7 paragraphs of content
+                        List<String> paragraphs = faker.lorem().paragraphs(faker.number().numberBetween(3, 8));
+                        String content = String.join("\n\n", paragraphs); // separate paragraphs by new lines
+
+                        p.setContent(safeSubstring(content, 5000)); // increase maxLength to allow longer content
                         p.setUser(users.get(faker.number().numberBetween(0, users.size())));
                         return p;
                     }).collect(Collectors.toList());

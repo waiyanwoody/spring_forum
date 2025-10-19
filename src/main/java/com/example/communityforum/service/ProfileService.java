@@ -41,7 +41,7 @@ public class ProfileService {
                         .map(post -> PostSummaryDTO.builder()
                                 .id(post.getId())
                                 .title(post.getTitle())
-                                .content(post.getContent()) // adjust field name
+                                .excerpt(generateExcerpt(post.getContent()))
                                 .createdAt(post.getCreatedAt().toString())
                                 .build())
                         .collect(Collectors.toList());
@@ -53,6 +53,13 @@ public class ProfileService {
                 .avatarUrl(user.getAvatarPath())
                 .bio(user.getBio())
                 .createdAt(user.getCreatedAt())
+                .posts(postSummaries)
                 .build();
     }
+
+    private String generateExcerpt(String content) {
+        if (content == null) return "";
+        return content.length() > 120 ? content.substring(0, 120) + "..." : content;
+    }
+
 }
