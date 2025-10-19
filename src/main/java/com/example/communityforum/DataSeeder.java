@@ -6,7 +6,8 @@ import com.github.javafaker.Faker;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
-import java.util.*;
+
+import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -29,7 +30,6 @@ public class DataSeeder implements CommandLineRunner {
         this.passwordEncoder = passwordEncoder;
     }
 
-    // Utility method for safe string trimming
     private String safeSubstring(String str, int maxLength) {
         if (str == null) return "";
         return str.length() > maxLength ? str.substring(0, maxLength) : str;
@@ -37,7 +37,24 @@ public class DataSeeder implements CommandLineRunner {
 
     @Override
     public void run(String... args) {
-        if (userRepository.count() == 0) {
+        // ✅ Step 1: Ensure admin exists
+        if (userRepository.findByEmail("admin@example.com").isEmpty()) {
+            User admin = User.builder()
+                    .username("admin")
+                    .email("admin@example.com")
+                    .password(passwordEncoder.encode("admin123"))
+                    .role("ADMIN")
+                    .bio("System administrator account")
+                    .build();
+
+            userRepository.save(admin);
+            System.out.println("✅ Admin account created: admin@example.com (password: admin123)");
+        } else {
+            System.out.println("ℹ️ Admin account already exists.");
+        }
+
+        // ✅ Step 2: Seed test data only if DB is empty (excluding admin)
+        if (userRepository.count() <= 1) { // only admin exists
             System.out.println("🌱 Seeding large test data...");
 
             // --- Users ---
@@ -73,7 +90,7 @@ public class DataSeeder implements CommandLineRunner {
                     }).collect(Collectors.toList());
             commentRepository.saveAll(comments);
 
-            System.out.println("✅ Seeding complete: 10 users, 50 posts, 100 comments!");
+            System.out.println("✅ Seeding complete: 1 admin, 10 users, 50 posts, 100 comments!");
         } else {
             System.out.println("ℹ️ Data already exists. Skipping seed.");
         }

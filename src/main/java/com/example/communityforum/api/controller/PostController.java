@@ -5,7 +5,14 @@ import com.example.communityforum.dto.post.PostRequestDTO;
 import com.example.communityforum.dto.post.PostDetailResponseDTO;
 import com.example.communityforum.persistence.entity.Post;
 import com.example.communityforum.service.PostService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -14,7 +21,9 @@ import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+import io.swagger.v3.oas.annotations.Parameter;
 
+@Tag(name = "Posts", description = "Endpoints for managing forum posts")
 @RestController
 @RequestMapping("/api/posts")
 public class PostController {
@@ -25,10 +34,13 @@ public class PostController {
         this.postService = postService;
     }
 
-    //Get all Posts
+    // ────────────────────────────────────────────────────────────────────────────────
     @GetMapping
     public ResponseEntity<Page<PostListResponseDTO>> getAllPosts(
-            @PageableDefault(page = 0, size = 5, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable
+            @ParameterObject
+            @Parameter(description = "Pagination and sorting parameters (e.g., ?page=0&size=5&sort=createdAt,DESC)")
+            @PageableDefault(page = 0, size = 5, sort = "createdAt", direction = Sort.Direction.DESC)
+            Pageable pageable
     ) {
         Page<PostListResponseDTO> response = postService.getAllPosts(pageable);
 

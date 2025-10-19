@@ -4,12 +4,14 @@ import com.example.communityforum.dto.user.UserRequestDTO;
 import com.example.communityforum.dto.user.UserResponseDTO;
 import com.example.communityforum.persistence.entity.User;
 import com.example.communityforum.service.UserService;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
+@Tag(name = "Users", description = "Endpoints for managing forum users")
 @RestController
 @RequestMapping("/api/admin/users")
 @CrossOrigin(origins = "*") // Allow frontend access (optional)

@@ -9,6 +9,7 @@ import com.example.communityforum.persistence.entity.User;
 import com.example.communityforum.persistence.repository.UserRepository;
 import com.example.communityforum.security.JwtUtil;
 import com.example.communityforum.security.SecurityUtils;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.apache.catalina.security.SecurityUtil;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -20,7 +21,7 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
-
+@Tag(name = "Authentication", description = "Endpoints authentication")
 @RestController
 @RequestMapping("/auth")
 public class AuthController {
