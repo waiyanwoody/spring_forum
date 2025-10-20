@@ -3,9 +3,11 @@ package com.example.communityforum.service;
 import com.example.communityforum.dto.user.UserRequestDTO;
 import com.example.communityforum.dto.user.UserResponseDTO;
 import com.example.communityforum.exception.DuplicateResourceException;
+import com.example.communityforum.exception.ResourceNotFoundException;
 import com.example.communityforum.persistence.entity.User;
 import com.example.communityforum.persistence.repository.UserRepository;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 import java.util.Optional;
@@ -73,6 +75,14 @@ public class UserService {
 //                })
 //                .orElseThrow(() -> new RuntimeException("User not found with id: " + id));
 //    }
+
+    // update user avatar
+    public void updateAvatar(Long userId, String avatarUrl) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(()->new ResourceNotFoundException("User",userId));
+        user.setAvatarPath(avatarUrl);
+        userRepository.save(user);
+    }
 
     // Delete user
     public void deleteUser(Long id) {

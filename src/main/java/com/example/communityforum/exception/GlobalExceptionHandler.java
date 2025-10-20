@@ -1,6 +1,8 @@
 package com.example.communityforum.exception;
 
+import com.example.communityforum.api.controller.FileValidationException;
 import com.example.communityforum.dto.ApiError;
+import com.example.communityforum.dto.file.FileUploadResponseDTO;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -179,6 +181,18 @@ public class GlobalExceptionHandler {
         apiError.setPath(((ServletWebRequest) request).getRequest().getRequestURI());
 
         return new ResponseEntity<>(apiError, HttpStatus.FORBIDDEN);
+    }
+
+    @ExceptionHandler(FileValidationException.class)
+    public ResponseEntity<ApiError> handleFileValidation(FileValidationException ex, WebRequest request) {
+        ApiError apiError = new ApiError(
+                HttpStatus.BAD_REQUEST.value(),
+                HttpStatus.BAD_REQUEST.getReasonPhrase(),
+                ex.getMessage()
+        );
+        apiError.setPath(((ServletWebRequest) request).getRequest().getRequestURI());
+
+        return new ResponseEntity<>(apiError, HttpStatus.BAD_REQUEST);
     }
 
     // Handle all other exceptions
