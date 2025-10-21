@@ -2,6 +2,7 @@ package com.example.communityforum.service;
 
 import com.example.communityforum.dto.comment.CommentRequestDTO;
 import com.example.communityforum.dto.comment.CommentResponseDTO;
+import com.example.communityforum.events.CommentCreatedEvent;
 import com.example.communityforum.persistence.entity.Comment;
 import com.example.communityforum.persistence.entity.Post;
 import com.example.communityforum.persistence.entity.User;
@@ -10,6 +11,7 @@ import com.example.communityforum.persistence.repository.PostRepository;
 import com.example.communityforum.persistence.repository.UserRepository;
 import com.example.communityforum.security.SecurityUtils;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -22,12 +24,14 @@ public class CommentService {
     private final PostRepository postRepository;
     private final UserRepository userRepository;
     private final SecurityUtils securityUtils;
+    private final ApplicationEventPublisher  publisher;
 
-    public CommentService(CommentRepository commentRepository, PostRepository postRepository, UserRepository userRepository, SecurityUtils securityUtils) {
+    public CommentService(CommentRepository commentRepository, PostRepository postRepository, UserRepository userRepository, SecurityUtils securityUtils,  ApplicationEventPublisher publisher) {
         this.commentRepository = commentRepository;
         this.postRepository = postRepository;
         this.userRepository = userRepository;
         this.securityUtils = securityUtils;
+        this.publisher = publisher;
     }
 
     // Get value from application.properties
@@ -68,6 +72,15 @@ public class CommentService {
                 .build();
 
         Comment saved = commentRepository.save(comment);
+
+        // publish event after comment created succsesfully
+        publisher.publishEvent(CommentCreatedEvent.builder()
+                .receiverId(post.getUser().getId())     // post owner is the receiver
+                .senderId(currentUser.getId())          // commenter
+                .postTitle(post.getTitle())     // for title of the post
+                .build());
+
+        System.out.println("receiver id: "+ post.getUser().getId());
         return toResponse(saved);
     }
 

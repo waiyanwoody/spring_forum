@@ -1,0 +1,157 @@
+html
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <title>Notification Listener</title>
+    <script src="https://cdn.jsdelivr.net/npm/sockjs-client@1/dist/sockjs.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/stompjs@2.3.3/lib/stomp.min.js"></script>
+    <style>
+        body {
+            font-family: Arial;
+            margin: 24px;
+        }
+
+        #log {
+            border: 1px solid #ddd;
+            padding: 12px;
+            border-radius: 6px;
+            max-width: 560px;
+            background: #fff;
+        }
+
+        .msg {
+            border-bottom: 1px solid #eee;
+            padding: 6px 0;
+        }
+
+        small {
+            color: #666;
+        }
+
+        button {
+            margin-left: 8px;
+        }
+    </style>
+</head>
+
+<body>
+    <h2>Simple Notification Listener</h2>
+
+    <div>
+        <label>Username <input id="username" value="admin" /></label>
+        <label>Password <input id="password" type="password" value="admin123" /></label>
+        <label>User ID <input id="userId" value="1" /></label>
+        <button id="loginConnect">Login & Listen</button>
+        <button id="disconnect" disabled>Disconnect</button>
+    </div>
+
+    <p id="status">Idle</p>
+
+    <div id="log">
+        <strong>Notifications</strong>
+        <div id="list"></div>
+    </div>
+
+    <script>
+        // Adjust to your backend
+        const LOGIN_URL = '/auth/login';                 // POST {username,password} -> { accessToken|token|jwt|id_token }
+        const WS_URL = '/ws';                                // SockJS endpoint
+        const TOPIC_FOR = (uid) => `/topic/user/${uid}/notifications`;
+
+        let jwt = null;
+        let stomp = null;
+
+        const $ = (id) => document.getElementById(id);
+        const setStatus = (t) => $('status').textContent = t;
+
+        $('loginConnect').addEventListener('click', async () => {
+            const username = $('username').value.trim();
+            const password = $('password').value;
+            const userId = $('userId').value.trim();
+
+            if (!username || !password) { alert('Enter credentials'); return; }
+            if (!userId) { alert('Enter your numeric User ID'); return; }
+
+            setStatus('Logging in...');
+
+            try {
+                const res = await fetch(LOGIN_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, password })
+                });
+                if (!res.ok) throw new Error(`Login failed (${res.status})`);
+                const data = await res.json();
+                jwt = data.accessToken || data.token || data.jwt || data.id_token;
+                if (!jwt) throw new Error('Token not found in response');
+
+                setStatus('Login OK. Connecting WebSocket...');
+                connectWithToken(jwt, userId);
+            } catch (e) {
+                setStatus('Login error');
+                console.error(e);
+                alert(e.message || 'Login error');
+            }
+        });
+
+        $('disconnect').addEventListener('click', () => {
+            if (stomp && stomp.connected) {
+                stomp.disconnect(() => {
+                    setStatus('Disconnected');
+                    $('disconnect').disabled = true;
+                    $('loginConnect').disabled = false;
+                    logMsg('Disconnected from WebSocket');
+                });
+            }
+        });
+
+        function connectWithToken(token, userId) {
+            // Avoid iframe transport to bypass X-Frame-Options issues
+            const sock = new SockJS(`${WS_URL}?token=${encodeURIComponent(token)}`, null, {
+                transports: ['websocket', 'xhr-streaming', 'xhr-polling']
+            });
+            stomp = Stomp.over(sock);
+            stomp.debug = null;
+
+            // STOMP headers are optional here; auth is in handshake via ?token=
+            stomp.connect({}, () => {
+                setStatus('Connected. Subscribing...');
+                $('disconnect').disabled = false;
+                $('loginConnect').disabled = true;
+
+                const dest = TOPIC_FOR(userId);
+                stomp.subscribe(dest, (frame) => {
+                    try {
+                        const body = frame.body ? JSON.parse(frame.body) : {};
+                        logMsg(body.message || body.text || frame.body);
+                    } catch {
+                        logMsg(frame.body);
+                    }
+                });
+
+                logMsg('Subscribed: ' + dest);
+            }, (err) => {
+                console.warn('STOMP error', err);
+                setStatus('Connection error');
+                $('disconnect').disabled = true;
+                $('loginConnect').disabled = false;
+            });
+        }
+
+        function logMsg(text) {
+            const div = document.createElement('div');
+            div.className = 'msg';
+            const ts = new Date().toLocaleTimeString();
+            div.innerHTML = `<div>${escapeHtml(String(text || ''))}</div><small>${ts}</small>`;
+            $('list').prepend(div);
+        }
+
+        function escapeHtml(s) {
+            return s.replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+        }
+    </script>
+</body>
+
+</html>
