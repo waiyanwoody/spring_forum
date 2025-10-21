@@ -2,6 +2,7 @@ package com.example.communityforum.notification;
 
 import com.example.communityforum.dto.notification.NotificationResponseDTO;
 import com.example.communityforum.events.CommentCreatedEvent;
+import com.example.communityforum.events.LikeToggledEvent;
 import com.example.communityforum.persistence.entity.Notification;
 import com.example.communityforum.persistence.repository.NotificationRepository;
 import com.example.communityforum.persistence.repository.UserRepository;
@@ -26,8 +27,10 @@ public class NotificationEventListener {
     @Transactional
     public void handleCommentCreated(CommentCreatedEvent event) {
         try {
-            if (!userRepository.existsById(event.getReceiverId())) return;
-            if (!userRepository.existsById(event.getSenderId())) return;
+            if (!userRepository.existsById(event.getReceiverId()))
+                return;
+            if (!userRepository.existsById(event.getSenderId()))
+                return;
 
             Notification notification = Notification.builder()
                     .receiverId(event.getReceiverId())
@@ -42,8 +45,7 @@ public class NotificationEventListener {
                     saved.getId(),
                     saved.getMessage(),
                     saved.getType(),
-                    saved.getCreatedAt().toString()
-            );
+                    saved.getCreatedAt().toString());
 
             String username = userRepository.findById(event.getReceiverId())
                     .map(u -> u.getUsername())
@@ -55,6 +57,58 @@ public class NotificationEventListener {
             }
         } catch (Exception e) {
             log.error("Failed to process notification", e);
+        }
+    }
+    
+    @Async
+    @EventListener
+    @Transactional
+    public void handleLikeToggled(LikeToggledEvent event) {
+        try {
+            // Only notify on LIKE (not UNLIKE)
+            if (!event.getNowLiked()) return;
+
+            // Do not notify self-likes
+            if (event.getActorId().equals(event.getOwnerId())) return;
+
+            // Validate receiver (owner) exists and get username to route user-destination
+            var ownerOpt = userRepository.findById(event.getOwnerId());
+            if (ownerOpt.isEmpty()) {
+                log.warn("LikeToggled: owner not found id={}", event.getOwnerId());
+                return;
+            }
+            var owner = ownerOpt.get();
+
+            // Get actor username for message if available
+            String actorName = userRepository.findById(event.getActorId())
+                    .map(u -> u.getUsername())
+                    .orElse("Someone");
+
+            String targetLabel = event.getTargetType() == com.example.communityforum.dto.LikeRequestDTO.TargetType.POST
+                    ? "post" : "comment";
+            String message = actorName + " liked your " + targetLabel + ".";
+
+            // Save notification
+            Notification notification = Notification.builder()
+                    .receiverId(event.getOwnerId())
+                    .senderId(event.getActorId())
+                    .type("LIKE")
+                    .message(message)
+                    .read(false)
+                    .build();
+            Notification saved = notificationRepository.save(notification);
+
+            // Send to user queue
+            NotificationResponseDTO dto = new NotificationResponseDTO(
+                    saved.getId(),
+                    saved.getMessage(),
+                    saved.getType(),
+                    saved.getCreatedAt().toString()
+            );
+            messagingTemplate.convertAndSendToUser(owner.getUsername(), "/queue/notifications", dto);
+            log.info("Like notification sent to user {} via /user/queue/notifications", owner.getUsername());
+        } catch (Exception e) {
+            log.error("Failed to process LikeToggledEvent: {}", event, e);
         }
     }
 }
