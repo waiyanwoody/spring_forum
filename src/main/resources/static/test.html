@@ -5,7 +5,6 @@ html
 <head>
     <meta charset="UTF-8" />
     <title>Notification Listener</title>
-    <script src="https://cdn.jsdelivr.net/npm/sockjs-client@1/dist/sockjs.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/stompjs@2.3.3/lib/stomp.min.js"></script>
     <style>
         body {
@@ -42,9 +41,9 @@ html
     <div>
         <label>Username <input id="username" value="admin" /></label>
         <label>Password <input id="password" type="password" value="admin123" /></label>
-        <label>User ID <input id="userId" value="1" /></label>
         <button id="loginConnect">Login & Listen</button>
         <button id="disconnect" disabled>Disconnect</button>
+        <button id="clear">Clear</button>
     </div>
 
     <p id="status">Idle</p>
@@ -55,10 +54,9 @@ html
     </div>
 
     <script>
-        // Adjust to your backend
-        const LOGIN_URL = '/auth/login';                 // POST {username,password} -> { accessToken|token|jwt|id_token }
-        const WS_URL = '/ws';                                // SockJS endpoint
-        const TOPIC_FOR = (uid) => `/topic/user/${uid}/notifications`;
+        const LOGIN_URL = '/auth/login';
+        const WS_BASE = (location.protocol === 'https:' ? 'wss://' : 'ws://') + location.host + '/ws';
+        const SUB_DEST = '/user/queue/notifications';
 
         let jwt = null;
         let stomp = null;
@@ -66,16 +64,14 @@ html
         const $ = (id) => document.getElementById(id);
         const setStatus = (t) => $('status').textContent = t;
 
+        $('clear').addEventListener('click', () => $('list').innerHTML = '');
+
         $('loginConnect').addEventListener('click', async () => {
             const username = $('username').value.trim();
             const password = $('password').value;
-            const userId = $('userId').value.trim();
-
             if (!username || !password) { alert('Enter credentials'); return; }
-            if (!userId) { alert('Enter your numeric User ID'); return; }
 
             setStatus('Logging in...');
-
             try {
                 const res = await fetch(LOGIN_URL, {
                     method: 'POST',
@@ -84,14 +80,14 @@ html
                 });
                 if (!res.ok) throw new Error(`Login failed (${res.status})`);
                 const data = await res.json();
-                jwt = data.accessToken || data.token || data.jwt || data.id_token;
+                jwt = data.token; // AuthResponse { token }
                 if (!jwt) throw new Error('Token not found in response');
 
                 setStatus('Login OK. Connecting WebSocket...');
-                connectWithToken(jwt, userId);
+                connectWithToken(jwt);
             } catch (e) {
-                setStatus('Login error');
                 console.error(e);
+                setStatus('Login error');
                 alert(e.message || 'Login error');
             }
         });
@@ -107,22 +103,18 @@ html
             }
         });
 
-        function connectWithToken(token, userId) {
-            // Avoid iframe transport to bypass X-Frame-Options issues
-            const sock = new SockJS(`${WS_URL}?token=${encodeURIComponent(token)}`, null, {
-                transports: ['websocket', 'xhr-streaming', 'xhr-polling']
-            });
-            stomp = Stomp.over(sock);
+        function connectWithToken(token) {
+            // Native WebSocket avoids SockJS iframe issues
+            const ws = new WebSocket(`${WS_BASE}?token=${encodeURIComponent(token)}`);
+            stomp = Stomp.over(ws);
             stomp.debug = null;
 
-            // STOMP headers are optional here; auth is in handshake via ?token=
+            // No need to send auth headers; token is in handshake query
             stomp.connect({}, () => {
                 setStatus('Connected. Subscribing...');
-                $('disconnect').disabled = false;
-                $('loginConnect').disabled = true;
+                $('disconnect').disabled = true; // briefly until subscribe succeeds
 
-                const dest = TOPIC_FOR(userId);
-                stomp.subscribe(dest, (frame) => {
+                stomp.subscribe(SUB_DEST, (frame) => {
                     try {
                         const body = frame.body ? JSON.parse(frame.body) : {};
                         logMsg(body.message || body.text || frame.body);
@@ -131,7 +123,9 @@ html
                     }
                 });
 
-                logMsg('Subscribed: ' + dest);
+                $('disconnect').disabled = false;
+                $('loginConnect').disabled = true;
+                logMsg('Subscribed: ' + SUB_DEST);
             }, (err) => {
                 console.warn('STOMP error', err);
                 setStatus('Connection error');

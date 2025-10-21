@@ -17,7 +17,6 @@ import org.springframework.transaction.annotation.Transactional;
 @Component
 @RequiredArgsConstructor
 public class NotificationEventListener {
-
     private final NotificationRepository notificationRepository;
     private final SimpMessagingTemplate messagingTemplate;
     private final UserRepository userRepository;
@@ -27,19 +26,9 @@ public class NotificationEventListener {
     @Transactional
     public void handleCommentCreated(CommentCreatedEvent event) {
         try {
-            // Validate receiver exists
-            if (!userRepository.existsById(event.getReceiverId())) {
-                log.warn("Receiver user not found with ID: {}", event.getReceiverId());
-                return;
-            }
+            if (!userRepository.existsById(event.getReceiverId())) return;
+            if (!userRepository.existsById(event.getSenderId())) return;
 
-            // Validate sender exists
-            if (!userRepository.existsById(event.getSenderId())) {
-                log.warn("Sender user not found with ID: {}", event.getSenderId());
-                return;
-            }
-
-            // 1️⃣ Save notification to DB
             Notification notification = Notification.builder()
                     .receiverId(event.getReceiverId())
                     .senderId(event.getSenderId())
@@ -47,10 +36,8 @@ public class NotificationEventListener {
                     .message("Your post '" + event.getPostTitle() + "' got a new comment.")
                     .read(false)
                     .build();
-
             Notification saved = notificationRepository.save(notification);
 
-            // 2️⃣ Prepare DTO for client
             NotificationResponseDTO dto = new NotificationResponseDTO(
                     saved.getId(),
                     saved.getMessage(),
@@ -58,14 +45,16 @@ public class NotificationEventListener {
                     saved.getCreatedAt().toString()
             );
 
-            // 3️⃣ Send to specific user's notification channel
-            String destination = "/topic/user/" + event.getReceiverId() + "/notifications";
-            messagingTemplate.convertAndSend(destination, dto);
-
-            log.info("✅ Notification sent to user {} via WebSocket", event.getReceiverId());
-
+            String username = userRepository.findById(event.getReceiverId())
+                    .map(u -> u.getUsername())
+                    .orElse(null);
+            if (username != null) {
+                // User-destination: client subscribes to /user/queue/notifications
+                messagingTemplate.convertAndSendToUser(username, "/queue/notifications", dto);
+                log.info("Notification sent to user {} via /user/queue/notifications", username);
+            }
         } catch (Exception e) {
-            log.error("❌ Failed to process notification for event: {}", event, e);
+            log.error("Failed to process notification", e);
         }
     }
 }
