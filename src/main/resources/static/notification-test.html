@@ -167,6 +167,36 @@
             box-shadow: 0 0 0 4px rgba(106, 167, 255, .15);
         }
 
+        .input-wrap {
+            position: relative;
+        }
+
+        .input.has-icon {
+            padding-right: 44px;
+        }
+
+        .icon-btn {
+            position: absolute;
+            right: 8px;
+            top: 50%;
+            transform: translateY(-50%);
+            border: 0;
+            background: transparent;
+            color: var(--muted);
+            padding: 6px;
+            border-radius: 8px;
+            cursor: pointer;
+        }
+
+        .icon-btn:hover {
+            color: var(--text);
+        }
+
+        .icon-btn:focus {
+            outline: 2px solid rgba(106, 167, 255, .35);
+            outline-offset: 2px;
+        }
+
         .actions {
             display: flex;
             gap: 10px;
@@ -292,8 +322,27 @@
                             </div>
                             <div>
                                 <label>Password</label>
-                                <input id="password" class="input" type="password" value="admin123"
-                                    autocomplete="current-password" />
+                                <div class="input-wrap">
+                                    <input id="password" class="input has-icon" type="password" value="admin123"
+                                        autocomplete="current-password" />
+                                    <button type="button" id="togglePwd" class="icon-btn" aria-label="Show password"
+                                        aria-pressed="false">
+                                        <!-- eye (open) -->
+                                        <svg id="eyeOpen" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"
+                                            fill="currentColor" width="20" height="20" aria-hidden="true">
+                                            <path
+                                                d="M12 5c-7 0-10 7-10 7s3 7 10 7 10-7 10-7-3-7-10-7zm0 12a5 5 0 1 1 0-10 5 5 0 0 1 0 10z" />
+                                            <circle cx="12" cy="12" r="3" />
+                                        </svg>
+                                        <!-- eye (off) -->
+                                        <svg id="eyeClosed" style="display:none" xmlns="http://www.w3.org/2000/svg"
+                                            viewBox="0 0 24 24" fill="currentColor" width="20" height="20"
+                                            aria-hidden="true">
+                                            <path
+                                                d="M2 5.27 3.28 4 20 20.72 18.73 22l-3.13-3.13A10.9 10.9 0 0 1 12 19C5 19 2 12 2 12a18.3 18.3 0 0 1 4.08-5.64L2 5.27zM12 7a5 5 0 0 1 5 5c0 .86-.21 1.66-.58 2.37l-1.49-1.49a3 3 0 0 0-3.81-3.81L9.63 7.58A4.94 4.94 0 0 1 12 7zm10 5s-1.01 2.35-3.06 4.29l-1.42-1.42C19.2 13.55 20 12 20 12s-3-7-8-7c-.64 0-1.26.07-1.86.19L8.6 3.65C9.68 3.23 10.81 3 12 3c7 0 10 9 10 9z" />
+                                        </svg>
+                                    </button>
+                                </div>
                             </div>
                         </div>
                     </form>
@@ -406,6 +455,21 @@
 
         function escapeHtml(s) {
             return s.replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+        }
+
+        // password field toggle show 
+        const toggleBtn = document.getElementById('togglePwd');
+        if (toggleBtn) {
+            toggleBtn.addEventListener('click', () => {
+                const pwd = document.getElementById('password');
+                const eyeOpen = document.getElementById('eyeOpen');
+                const eyeClosed = document.getElementById('eyeClosed');
+                const show = pwd.type === 'password';
+                pwd.type = show ? 'text' : 'password';
+                toggleBtn.setAttribute('aria-pressed', String(show));
+                eyeOpen.style.display = show ? 'none' : '';
+                eyeClosed.style.display = show ? '' : 'none';
+            });
         }
     </script>
 </body>
