@@ -176,23 +176,44 @@ public class GlobalExceptionHandler {
         ApiError apiError = new ApiError(
                 HttpStatus.FORBIDDEN.value(),
                 HttpStatus.FORBIDDEN.getReasonPhrase(),
-                ex.getMessage()
-        );
+                ex.getMessage());
         apiError.setPath(((ServletWebRequest) request).getRequest().getRequestURI());
 
         return new ResponseEntity<>(apiError, HttpStatus.FORBIDDEN);
     }
 
+    // Handle file validation exceptions
     @ExceptionHandler(FileValidationException.class)
     public ResponseEntity<ApiError> handleFileValidation(FileValidationException ex, WebRequest request) {
         ApiError apiError = new ApiError(
                 HttpStatus.BAD_REQUEST.value(),
                 HttpStatus.BAD_REQUEST.getReasonPhrase(),
-                ex.getMessage()
-        );
+                ex.getMessage());
         apiError.setPath(((ServletWebRequest) request).getRequest().getRequestURI());
 
         return new ResponseEntity<>(apiError, HttpStatus.BAD_REQUEST);
+    }
+
+    // Handle custom HttpStatusException
+    @ExceptionHandler(HttpStatusException.class)
+    public ResponseEntity<ApiError> handleHttpStatusException(HttpStatusException ex, WebRequest request) {
+        HttpStatus status = ex.getStatus();
+        ApiError apiError;
+
+        if (ex.getErrors() != null && !ex.getErrors().isEmpty()) {
+            apiError = new ApiError(
+                    status.value(),
+                    status.getReasonPhrase(),
+                    ex.getMessage(),
+                    ex.getErrors());
+        } else {
+            apiError = new ApiError(
+                    status.value(),
+                    status.getReasonPhrase(),
+                    ex.getMessage());
+        }
+        apiError.setPath(((ServletWebRequest) request).getRequest().getRequestURI());
+        return new ResponseEntity<>(apiError, status);
     }
 
     // Handle all other exceptions

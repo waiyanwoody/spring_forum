@@ -4,8 +4,14 @@ package com.example.communityforum.api.controller;
 import com.example.communityforum.dto.post.PostDetailResponseDTO;
 import com.example.communityforum.dto.post.PostListResponseDTO;
 import com.example.communityforum.dto.post.PostRequestDTO;
+import com.example.communityforum.persistence.entity.Follow;
 import com.example.communityforum.persistence.entity.Post;
+import com.example.communityforum.persistence.entity.User;
+import com.example.communityforum.persistence.repository.FollowRepository;
+import com.example.communityforum.persistence.repository.PostRepository;
+import com.example.communityforum.persistence.repository.UserRepository;
 import com.example.communityforum.service.PostService;
+import com.example.communityforum.service.UserService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -24,12 +30,23 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import io.swagger.v3.oas.annotations.Parameter;
 
+import java.util.List;
+
 @Tag(name = "Posts", description = "Endpoints for managing forum posts")
 @RestController
 @RequestMapping("/api/posts")
 public class PostController {
     @Autowired
     private PostService postService;
+
+    @Autowired
+    private UserRepository userRepository;
+
+    @Autowired
+    private FollowRepository followRepository;
+
+    @Autowired
+    private PostRepository  postRepository;
 
     public  PostController(PostService postService) {
         this.postService = postService;
@@ -46,6 +63,19 @@ public class PostController {
         Page<PostListResponseDTO> response = postService.getAllPosts(pageable);
 
         return ResponseEntity.ok(response);
+    }
+
+    // get post feed of following users
+    public List<Post> getFollowingFeed(Long userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        List<User> followingUsers = followRepository.findByFollower(user)
+                .stream()
+                .map(Follow::getFollowing)
+                .toList();
+
+        return postRepository.findPostsByFollowing(followingUsers);
     }
 
     //Get one post by id

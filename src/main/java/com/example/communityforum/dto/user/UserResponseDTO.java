@@ -1,12 +1,14 @@
 package com.example.communityforum.dto.user;
 
+import com.example.communityforum.persistence.entity.User;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 
-@Getter
+@Getter @Setter
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
@@ -24,4 +26,18 @@ public class UserResponseDTO {
         this.username = username;
         this.email = email;
     }
+
+    public static UserResponseDTO fromEntity(User user) {
+
+        UserResponseDTO dto = new UserResponseDTO();
+
+        // Map fields from User entity to UserResponseDTO
+        dto.setId(user.getId());
+        dto.setUsername(user.getUsername());
+        dto.setEmail(user.getEmail());
+
+        return dto;
+
+    }
+
 }
