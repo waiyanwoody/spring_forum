@@ -1,7 +1,9 @@
 package com.example.communityforum.api.controller;
 
 import com.example.communityforum.dto.file.FileUploadResponseDTO;
+import com.example.communityforum.dto.user.ProfileRequest;
 import com.example.communityforum.dto.user.ProfileResponseDTO;
+import com.example.communityforum.dto.user.UserRequestDTO;
 import com.example.communityforum.exception.PermissionDeniedException;
 import com.example.communityforum.exception.ResourceNotFoundException;
 import com.example.communityforum.persistence.entity.User;
@@ -12,6 +14,7 @@ import com.example.communityforum.service.ProfileService;
 import com.example.communityforum.service.UserService;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.mail.Multipart;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -50,6 +53,14 @@ public class ProfileController {
     @GetMapping("/{id}")
     public ResponseEntity<ProfileResponseDTO> getUserProfileById(@PathVariable Long id) {
         return ResponseEntity.ok(profileService.getUserProfileById(id));
+    }
+
+    // Update profile
+    @PutMapping
+    public ResponseEntity<ProfileResponseDTO> updateProfile(@Valid @RequestBody ProfileRequest request) {
+        User currentUser = securityUtils.getCurrentUser();
+        ProfileResponseDTO updatedProfile = userService.updateProfile(currentUser.getId(), request);
+        return ResponseEntity.ok(updatedProfile);
     }
 
     // Upload profile avatar

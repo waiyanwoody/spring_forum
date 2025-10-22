@@ -15,4 +15,13 @@ public class ProfileResponseDTO {
     private String avatarUrl;            // public URL to serve avatar
     private List<PostSummaryDTO> posts;  // light-weight info on posts
     private LocalDateTime createdAt;
+
+    public ProfileResponseDTO(Long id, String username, String email, String bio, String avatarUrl, LocalDateTime createdAt) {
+        this.id = id;
+        this.username = username;
+        this.email = email;
+        this.bio = bio;
+        this.avatarUrl = avatarUrl;
+        this.createdAt = createdAt;
+    }
 }

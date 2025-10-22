@@ -1,5 +1,7 @@
 package com.example.communityforum.service;
 
+import com.example.communityforum.dto.user.ProfileRequest;
+import com.example.communityforum.dto.user.ProfileResponseDTO;
 import com.example.communityforum.dto.user.UserRequestDTO;
 import com.example.communityforum.dto.user.UserResponseDTO;
 import com.example.communityforum.exception.DuplicateResourceException;
@@ -62,19 +64,37 @@ public class UserService {
     public Optional<User> getUserByUsername(String username) {
         return userRepository.findByUsername(username);
     }
+    
+    // update profile 
+    public ProfileResponseDTO updateProfile(Long userId, ProfileRequest request) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("User", userId));
 
-    // Update user
-//    public User updateUser(Long id, User userDetails) {
-//        return userRepository.findById(id)
-//                .map(user -> {
-//                    user.setUsername(userDetails.getUsername());
-//                    user.setEmail(userDetails.getEmail());
-//                    user.setPassword(userDetails.getPassword()); // Make sure to hash password if needed
-//                    // set other fields as needed
-//                    return userRepository.save(user);
-//                })
-//                .orElseThrow(() -> new RuntimeException("User not found with id: " + id));
-//    }
+        String username = request.getUsername();
+        String email = request.getEmail();
+        if (!user.getUsername().equals(username) &&
+                userRepository.existsByUsername(username)) {
+            throw new DuplicateResourceException("Username is already in use");
+        }
+
+        if (!user.getEmail().equals(email) &&
+                userRepository.existsByEmail(email)) {
+            throw new DuplicateResourceException("Email is already in use");
+        }
+
+        user.setUsername(username);
+        user.setEmail(email);
+        user.setBio(request.getBio());
+        User updatedUser = userRepository.save(user);
+        return mapToProfileResponseDTO(updatedUser);
+    }
+
+    // map to profile response dto
+    public ProfileResponseDTO mapToProfileResponseDTO(User user) {
+        // response without posts
+        return new ProfileResponseDTO(user.getId(), user.getUsername(), user.getEmail(), user.getBio(),
+                user.getAvatarPath(), user.getCreatedAt());
+    }
 
     // update user avatar
     public void updateAvatar(Long userId, String avatarUrl) {

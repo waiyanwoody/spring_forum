@@ -1,10 +1,13 @@
 package com.example.communityforum.api.controller;
 
 import com.example.communityforum.dto.LikeRequestDTO;
+import com.example.communityforum.events.CommentCreatedEvent;
+import com.example.communityforum.events.LikeToggledEvent;
 import com.example.communityforum.service.CommentService;
 import com.example.communityforum.service.LikeService;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;

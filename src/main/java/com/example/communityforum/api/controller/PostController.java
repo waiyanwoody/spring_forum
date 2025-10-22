@@ -1,8 +1,9 @@
 package com.example.communityforum.api.controller;
 
+
+import com.example.communityforum.dto.post.PostDetailResponseDTO;
 import com.example.communityforum.dto.post.PostListResponseDTO;
 import com.example.communityforum.dto.post.PostRequestDTO;
-import com.example.communityforum.dto.post.PostDetailResponseDTO;
 import com.example.communityforum.persistence.entity.Post;
 import com.example.communityforum.service.PostService;
 import io.swagger.v3.oas.annotations.Operation;

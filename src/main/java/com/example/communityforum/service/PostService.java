@@ -7,9 +7,11 @@ import com.example.communityforum.exception.PermissionDeniedException;
 import com.example.communityforum.exception.ResourceNotFoundException;
 import com.example.communityforum.mapper.PostMapper;
 import com.example.communityforum.persistence.entity.Post;
+import com.example.communityforum.persistence.entity.Tag;
 import com.example.communityforum.persistence.entity.User;
 import com.example.communityforum.persistence.repository.LikeRepository;
 import com.example.communityforum.persistence.repository.PostRepository;
+import com.example.communityforum.persistence.repository.TagRepository;
 import com.example.communityforum.security.SecurityUtils;
 import lombok.AllArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -19,6 +21,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @AllArgsConstructor
 @Service
@@ -27,6 +32,7 @@ public class PostService {
     private final PostRepository postRepository;
     private final SecurityUtils securityUtils;
     private final LikeRepository  likeRepository;
+    private final TagRepository tagRepository;
     private final PostMapper  postMapper;
 
 
@@ -55,8 +61,19 @@ public class PostService {
         //ensure post has owner
         post.setUser(currentUser);
         post.setCreatedAt(LocalDateTime.now());
+
+        post.setTags(processTags(request.getTags()));
+
         postRepository.save(post);
-        return postMapper.toDetailDTO(post,currentUser);
+        return postMapper.toDetailDTO(post, currentUser);
+    }
+    
+    private Set<Tag> processTags(List<String> tagNames) {
+        return tagNames.stream()
+                .filter(tagName -> tagName != null && !tagName.trim().isEmpty())
+                .map(tagName -> tagRepository.findByNameIgnoreCase(tagName.trim())
+                        .orElseGet(() -> tagRepository.save(Tag.builder().name(tagName.trim()).build())))
+                .collect(Collectors.toSet());
     }
 
     // update post
