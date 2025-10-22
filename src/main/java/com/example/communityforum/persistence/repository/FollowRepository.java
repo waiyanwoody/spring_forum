@@ -13,7 +13,8 @@ import java.util.List;
 
 @Repository
 public interface FollowRepository extends JpaRepository<Follow, Long> {
-boolean existsByFollowerAndFollowing(User follower, User following);
+
+    boolean existsByFollowerAndFollowing(User follower, User following);
 
     @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Transactional

@@ -3,6 +3,7 @@ package com.example.communityforum.api.controller;
 import com.example.communityforum.dto.file.FileUploadResponseDTO;
 import com.example.communityforum.dto.user.ProfileRequest;
 import com.example.communityforum.dto.user.ProfileResponseDTO;
+import com.example.communityforum.dto.user.ProfileStatsDTO;
 import com.example.communityforum.dto.user.UserRequestDTO;
 import com.example.communityforum.exception.PermissionDeniedException;
 import com.example.communityforum.exception.ResourceNotFoundException;
@@ -137,5 +138,11 @@ public class ProfileController {
         if (!fileName.matches(".*\\.(jpg|jpeg|png|gif)$")) {
             throw new FileValidationException("Invalid file extension");
         }
+    }
+
+    // Get profile statistics
+    @GetMapping("/{id}/stats")
+    public ResponseEntity<ProfileStatsDTO> getUserStats(@PathVariable Long id) {
+        return ResponseEntity.ok(profileService.getProfileStats(id));
     }
 }

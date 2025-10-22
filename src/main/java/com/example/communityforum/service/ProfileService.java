@@ -2,6 +2,7 @@ package com.example.communityforum.service;
 
 import com.example.communityforum.dto.post.PostSummaryDTO;
 import com.example.communityforum.dto.user.ProfileResponseDTO;
+import com.example.communityforum.dto.user.ProfileStatsDTO;
 import com.example.communityforum.exception.ResourceNotFoundException;
 import com.example.communityforum.persistence.entity.User;
 import com.example.communityforum.persistence.repository.PostRepository;
@@ -36,8 +37,8 @@ public class ProfileService {
 
     private ProfileResponseDTO toProfileDTO(User user) {
 
-        List<PostSummaryDTO> postSummaries = user.getPosts() == null ? List.of() :
-                user.getPosts().stream()
+        List<PostSummaryDTO> postSummaries = user.getPosts() == null ? List.of()
+                : user.getPosts().stream()
                         .map(post -> PostSummaryDTO.builder()
                                 .id(post.getId())
                                 .title(post.getTitle())
@@ -55,6 +56,17 @@ public class ProfileService {
                 .createdAt(user.getCreatedAt())
                 .posts(postSummaries)
                 .build();
+    }
+    
+    // Get profile statistics
+    public ProfileStatsDTO getProfileStats(Long userId) {
+        var p = userRepository.getProfileCounts(userId);
+        return new ProfileStatsDTO(
+                p.getFollowingCount(),
+                p.getFollowerCount(),
+                p.getPostCount(),
+                p.getPostLikeCount()
+        );
     }
 
     private String generateExcerpt(String content) {
