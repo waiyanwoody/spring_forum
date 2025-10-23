@@ -3,6 +3,7 @@ package com.example.communityforum.notification;
 import com.example.communityforum.dto.notification.NotificationResponseDTO;
 import com.example.communityforum.events.CommentCreatedEvent;
 import com.example.communityforum.events.LikeToggledEvent;
+import com.example.communityforum.events.NewFollowerEvent;
 import com.example.communityforum.persistence.entity.Notification;
 import com.example.communityforum.persistence.repository.NotificationRepository;
 import com.example.communityforum.persistence.repository.UserRepository;
@@ -66,10 +67,12 @@ public class NotificationEventListener {
     public void handleLikeToggled(LikeToggledEvent event) {
         try {
             // Only notify on LIKE (not UNLIKE)
-            if (!event.getNowLiked()) return;
+            if (!event.getNowLiked())
+                return;
 
             // Do not notify self-likes
-            if (event.getActorId().equals(event.getOwnerId())) return;
+            if (event.getActorId().equals(event.getOwnerId()))
+                return;
 
             // Validate receiver (owner) exists and get username to route user-destination
             var ownerOpt = userRepository.findById(event.getOwnerId());
@@ -85,7 +88,8 @@ public class NotificationEventListener {
                     .orElse("Someone");
 
             String targetLabel = event.getTargetType() == com.example.communityforum.dto.LikeRequestDTO.TargetType.POST
-                    ? "post" : "comment";
+                    ? "post"
+                    : "comment";
             String message = actorName + " liked your " + targetLabel + ".";
 
             // Save notification
@@ -103,12 +107,49 @@ public class NotificationEventListener {
                     saved.getId(),
                     saved.getMessage(),
                     saved.getType(),
-                    saved.getCreatedAt().toString()
-            );
+                    saved.getCreatedAt().toString());
             messagingTemplate.convertAndSendToUser(owner.getUsername(), "/queue/notifications", dto);
             log.info("Like notification sent to user {} via /user/queue/notifications", owner.getUsername());
         } catch (Exception e) {
             log.error("Failed to process LikeToggledEvent: {}", event, e);
+        }
+    }
+
+    // Add new follower event handling
+    @Async
+    @EventListener
+    @Transactional
+    public void handleNewFollower(NewFollowerEvent event) {
+        try {
+            
+            var followedOpt = userRepository.findById(event.getFollowingId());
+            var followerName = userRepository.findById(event.getFollowerId())
+                    .map(u -> u.getUsername())
+                    .orElse("Someone");
+
+            String message = followerName + " started following you.";
+
+            Notification notification = Notification.builder()
+                    .receiverId(event.getFollowingId())
+                    .senderId(event.getFollowerId())
+                    .type("FOLLOW")
+                    .message(message)
+                    .read(false)
+                    .build();
+            Notification saved = notificationRepository.save(notification);
+
+            NotificationResponseDTO dto = new NotificationResponseDTO(
+                    saved.getId(),
+                    saved.getMessage(),
+                    saved.getType(),
+                    saved.getCreatedAt().toString()
+            );
+
+            String followedUsername = followedOpt.get().getUsername();
+            messagingTemplate.convertAndSendToUser(followedUsername, "/queue/notifications", dto);
+            log.info("Follow notification sent to user {} via /user/queue/notifications", followedUsername);
+        } catch (Exception e) {
+            log.error("Failed to process NewFollowerEvent: {}", event, e);
         }
     }
 }

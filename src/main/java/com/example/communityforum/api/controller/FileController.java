@@ -3,11 +3,13 @@ package com.example.communityforum.api.controller;
 import com.example.communityforum.dto.file.FileUploadRequestDTO;
 import com.example.communityforum.dto.file.FileUploadResponseDTO;
 import com.example.communityforum.dto.file.MultipleFileUploadRequest;
+import com.example.communityforum.exception.FileValidationException;
 import com.example.communityforum.service.FileStorageService;
+
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.annotation.PostConstruct;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -15,9 +17,9 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.util.ArrayList;
 import java.util.List;
 
+@Tag(name = "File Management", description = "Endpoints for uploading and managing files")
 @RestController
 @RequestMapping("/api/files")
 public class FileController {

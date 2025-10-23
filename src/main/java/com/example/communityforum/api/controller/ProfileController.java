@@ -4,7 +4,7 @@ import com.example.communityforum.dto.file.FileUploadResponseDTO;
 import com.example.communityforum.dto.user.ProfileRequest;
 import com.example.communityforum.dto.user.ProfileResponseDTO;
 import com.example.communityforum.dto.user.ProfileStatsDTO;
-import com.example.communityforum.dto.user.UserRequestDTO;
+import com.example.communityforum.exception.FileValidationException;
 import com.example.communityforum.exception.PermissionDeniedException;
 import com.example.communityforum.exception.ResourceNotFoundException;
 import com.example.communityforum.persistence.entity.User;
@@ -14,18 +14,14 @@ import com.example.communityforum.service.FileStorageService;
 import com.example.communityforum.service.ProfileService;
 import com.example.communityforum.service.UserService;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import jakarta.mail.Multipart;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.security.core.parameters.P;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
 
 @Tag(name = "Profiles", description = "Endpoints for managing forum user profiles")
 @RestController

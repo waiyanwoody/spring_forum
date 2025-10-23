@@ -1,6 +1,9 @@
 package com.example.communityforum.api.controller;
 
 import com.example.communityforum.persistence.repository.NotificationRepository;
+
+import io.swagger.v3.oas.annotations.tags.Tag;
+
 import com.example.communityforum.persistence.entity.Notification;
 import lombok.RequiredArgsConstructor;
 import org.springframework.messaging.handler.annotation.MessageMapping;
@@ -9,6 +12,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
+@Tag(name = "Notifications", description = "Endpoints for managing user notifications")
 @RestController
 @RequestMapping("/api/notifications")
 @RequiredArgsConstructor

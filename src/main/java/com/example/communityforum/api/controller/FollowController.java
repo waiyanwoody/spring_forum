@@ -4,6 +4,8 @@ import com.example.communityforum.dto.user.UserResponseDTO;
 import com.example.communityforum.persistence.entity.User;
 import com.example.communityforum.security.SecurityUtils;
 import com.example.communityforum.service.FollowService;
+
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -11,6 +13,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
+@Tag(name = "Follows", description = "Endpoints for managing user follows")
 @RestController
 @RequestMapping("/api/follows")
 @RequiredArgsConstructor

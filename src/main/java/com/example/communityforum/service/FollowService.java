@@ -1,5 +1,6 @@
 package com.example.communityforum.service;
 
+import com.example.communityforum.events.NewFollowerEvent;
 import com.example.communityforum.exception.HttpStatusException;
 import com.example.communityforum.exception.ResourceNotFoundException;
 import com.example.communityforum.persistence.entity.Follow;
@@ -9,6 +10,8 @@ import com.example.communityforum.persistence.repository.UserRepository;
 
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
@@ -20,6 +23,7 @@ public class FollowService {
 
     private final FollowRepository followRepository;
     private final UserRepository userRepository;
+    private final ApplicationEventPublisher publisher;
 
     @Transactional
     public void followUser(Long followerId, Long followingId) {
@@ -28,6 +32,11 @@ public class FollowService {
         User following = userRepository.findById(followingId).orElseThrow(() -> new ResourceNotFoundException("User to follow",followingId));
         if (followRepository.existsByFollowerAndFollowing(follower, following)) throw HttpStatusException.of("Already following", HttpStatus.BAD_REQUEST);
         followRepository.save(Follow.builder().follower(follower).following(following).build());
+        // publish NewFollower event
+        publisher.publishEvent(NewFollowerEvent.builder()
+                .followerId(followerId)
+                .followingId(followingId)
+                .build());
     }
 
     @Transactional
