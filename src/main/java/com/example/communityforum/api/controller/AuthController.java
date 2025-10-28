@@ -9,6 +9,8 @@ import com.example.communityforum.persistence.entity.User;
 import com.example.communityforum.persistence.repository.UserRepository;
 import com.example.communityforum.security.JwtUtil;
 import com.example.communityforum.security.SecurityUtils;
+import com.example.communityforum.service.VerificationService;
+
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.apache.catalina.security.SecurityUtil;
@@ -20,6 +22,9 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+
 
 @Tag(name = "Authentication", description = "Endpoints authentication")
 @RestController
@@ -41,6 +46,9 @@ public class AuthController {
     @Autowired
     private SecurityUtils securityUtils;
 
+    @Autowired
+    private VerificationService verificationService;
+
     @GetMapping("/me")
     public ResponseEntity<UserResponseDTO> getCurrentUser() {
         User currentUser = securityUtils.getCurrentUser(); // fetch logged-in user
@@ -58,7 +66,7 @@ public class AuthController {
 
     // -- Register --
     @PostMapping("/register")
-    public AuthResponse  registerUser(@Valid @RequestBody UserRequestDTO request) {
+    public AuthResponse registerUser(@Valid @RequestBody UserRequestDTO request) {
         // Check if username already exists
         if (userRepository.existsByUsername(request.getUsername())) {
             throw new DuplicateResourceException("Username is already taken");
@@ -74,19 +82,28 @@ public class AuthController {
         user.setPassword(passwordEncoder.encode(request.getPassword()));
         user.setEmail(request.getEmail());
         user.setRole("USER");
-
+        user.setEmailVerified(false);
         userRepository.save(user);
+
+        // Send verification email
+        verificationService.sendVerification(user);
 
         String token = jwtUtil.generateToken(
                 org.springframework.security.core.userdetails.User
                         .withUsername(user.getUsername())
                         .password(user.getPassword())
                         .roles(user.getRole())
-                        .build()
-        );
+                        .build());
 
         return new AuthResponse(token);
     }
+    
+    @GetMapping("/verify-email")
+    public ResponseEntity<String> verifyEmail(@RequestParam String token) {
+        verificationService.verify(token);
+        return ResponseEntity.ok("Email verified. You can now use all features.");
+    }
+    
 
     // -- Login --
     @PostMapping("/login")

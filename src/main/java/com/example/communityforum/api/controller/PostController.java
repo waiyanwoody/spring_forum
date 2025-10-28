@@ -86,12 +86,14 @@ public class PostController {
 
     //Create a post
     @PostMapping
+    @PreAuthorize("@securityUtils.isVerified()")
     public PostDetailResponseDTO addPost(@Valid @RequestBody PostRequestDTO request) {
         return postService.addPost(request);
     }
 
     //Update post by id
     @PutMapping("/{id}")
+    @PreAuthorize("@securityUtils.isVerified()")
     public PostDetailResponseDTO updatePost(@PathVariable Long id, @RequestBody PostRequestDTO request) {
             return postService.updatePost(id,request);
     }

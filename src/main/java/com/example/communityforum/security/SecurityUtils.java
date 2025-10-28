@@ -87,4 +87,16 @@ public class SecurityUtils {
         User currentUser = getCurrentUser();
         return currentUser.getRole().equals("ADMIN");
     }
+
+    // Check if current user's email is verified
+    public boolean isVerified() {
+        User currentUser = getCurrentUser();
+        return currentUser.isEmailVerified();
+    }
+
+    public void requireVerified() {
+        if (!isVerified()) {
+            throw new PermissionDeniedException("Email not verified. Please verify your email to access this feature.");
+        }
+    }
 }
