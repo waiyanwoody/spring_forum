@@ -19,7 +19,9 @@ public class UserResponseDTO {
     private String username;
     private String email;
     private String role;
-
+    private String created_at;
+    private boolean email_verified;
+    private String email_verified_at;
 
     public UserResponseDTO(Long id, String username, String email) {
         this.id = id;
