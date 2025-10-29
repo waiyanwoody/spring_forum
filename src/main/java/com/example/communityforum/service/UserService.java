@@ -70,23 +70,23 @@ public class UserService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("User", userId));
 
+        // username change (unique check only if changed and provided)
         String username = request.getUsername();
-        String email = request.getEmail();
-        if (!user.getUsername().equals(username) &&
-                userRepository.existsByUsername(username)) {
-            throw new DuplicateResourceException("Username is already in use");
+        if (username != null && !username.equals(user.getUsername())) {
+            if (userRepository.existsByUsername(username)) {
+                throw new DuplicateResourceException("Username is already in use");
+            }
+            user.setUsername(username);
         }
 
-        if (!user.getEmail().equals(email) &&
-                userRepository.existsByEmail(email)) {
-            throw new DuplicateResourceException("Email is already in use");
-        }
+        // bio and avatar (optional)
+        if (request.getBio() != null)
+            user.setBio(request.getBio());
+        if (request.getAvatarPath() != null)
+            user.setAvatarPath(request.getAvatarPath());
 
-        user.setUsername(username);
-        user.setEmail(email);
-        user.setBio(request.getBio());
-        User updatedUser = userRepository.save(user);
-        return mapToProfileResponseDTO(updatedUser);
+        User updated = userRepository.save(user);
+        return mapToProfileResponseDTO(updated);
     }
 
     // map to profile response dto

@@ -139,4 +139,22 @@ public class AuthController {
         return new AuthResponse(token);
     }
 
+    @GetMapping("/confirm-email-change")
+    public ResponseEntity<Void> confirmEmailChange(@RequestParam String token) {
+        String redirectUrl;
+        try {
+            verificationService.confirmEmailChange(token);
+            redirectUrl = frontendUrl + "/verified?status=email-updated";
+        } catch (HttpStatusException e) {
+            redirectUrl = frontendUrl + "/verified?status=fail&reason=" +
+                    UriUtils.encode(e.getMessage(), StandardCharsets.UTF_8);
+        } catch (Exception e) {
+            redirectUrl = frontendUrl + "/verified?status=fail&reason=" +
+                    UriUtils.encode("Something went wrong", StandardCharsets.UTF_8);
+        }
+        HttpHeaders h = new HttpHeaders();
+        h.add("Location", redirectUrl);
+        return new ResponseEntity<>(h, HttpStatus.FOUND);
+    }
+
 }
