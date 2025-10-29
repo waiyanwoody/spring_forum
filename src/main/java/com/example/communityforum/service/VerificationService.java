@@ -89,4 +89,79 @@ public class VerificationService {
         evt.setUsed(true);
         tokenRepo.save(evt);
     }
+
+    @Transactional
+    public void startEmailChange(User user, String newEmail, boolean unverifyUntilConfirmed) {
+        // reject same or duplicate email
+        if (user.getEmail().equalsIgnoreCase(newEmail)) {
+            throw HttpStatusException.of("New email is the same as current", HttpStatus.BAD_REQUEST);
+        }
+        if (userRepo.existsByEmail(newEmail)) {
+            throw HttpStatusException.of("Email is already registered", HttpStatus.BAD_REQUEST);
+        }
+        // optional: prevent concurrent requests to same address
+        if (tokenRepo.existsByNewEmailAndPurpose(newEmail, "EMAIL_UPDATE")) {
+            throw HttpStatusException.of("A verification was already sent to this email", HttpStatus.BAD_REQUEST);
+        }
+        // clear previous pending updates for this user
+        tokenRepo.deleteByUser_IdAndPurpose(user.getId(), "EMAIL_UPDATE");
+
+        // create token
+        String token = UUID.randomUUID().toString();
+        EmailVerificationToken evt = EmailVerificationToken.builder()
+                .token(token)
+                .purpose("EMAIL_UPDATE")
+                .expiresAt(LocalDateTime.now().plusHours(expireHours))
+                .used(false)
+                .newEmail(newEmail)
+                .user(user)
+                .build();
+        tokenRepo.save(evt);
+
+        // restrict until confirm
+        if (unverifyUntilConfirmed) {
+            user.setEmailVerified(false);
+            userRepo.save(user);
+        }
+
+        // email to NEW address
+        String link = baseUrl + "/auth/confirm-email-change?token=" + token;
+        Context ctx = new Context();
+        ctx.setVariable("username", user.getUsername());
+        ctx.setVariable("verifyLink", link);
+        ctx.setVariable("appName", appName);
+        ctx.setVariable("expireHours", expireHours);
+        ctx.setVariable("newEmail", newEmail);
+        String html = templateEngine.process("mail/confirm-email-change", ctx);
+        publisher.publishEvent(new EmailVerificationRequested(newEmail, "Confirm your new email", html));
+    }
+
+    @Transactional
+    public void confirmEmailChange(String token) {
+        EmailVerificationToken evt = tokenRepo.findByToken(token)
+                .orElseThrow(() -> HttpStatusException.of("Invalid email change token", HttpStatus.BAD_REQUEST));
+        if (!"EMAIL_UPDATE".equals(evt.getPurpose())) {
+            throw HttpStatusException.of("Invalid token purpose", HttpStatus.BAD_REQUEST);
+        }
+        if (evt.isUsed() || evt.getExpiresAt().isBefore(LocalDateTime.now())) {
+            throw HttpStatusException.of("Email change token expired or already used", HttpStatus.BAD_REQUEST);
+        }
+        // finalize change
+        User user = evt.getUser();
+        String newEmail = evt.getNewEmail();
+        if (newEmail == null || newEmail.isBlank()) {
+            throw HttpStatusException.of("Missing new email in token", HttpStatus.BAD_REQUEST);
+        }
+        // last-second uniqueness guard
+        if (userRepo.existsByEmail(newEmail)) {
+            throw HttpStatusException.of("Email is already registered", HttpStatus.BAD_REQUEST);
+        }
+        user.setEmail(newEmail);
+        user.setEmailVerified(true);
+        user.setEmailVerifiedAt(LocalDateTime.now());
+        userRepo.save(user);
+
+        evt.setUsed(true);
+        tokenRepo.save(evt);
+    }
 }

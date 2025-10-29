@@ -13,6 +13,8 @@ import com.example.communityforum.security.SecurityUtils;
 import com.example.communityforum.service.FileStorageService;
 import com.example.communityforum.service.ProfileService;
 import com.example.communityforum.service.UserService;
+import com.example.communityforum.service.VerificationService;
+
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -37,6 +39,7 @@ public class ProfileController {
     private final List<String> ALLOWED_TYPES = List.of("image/jpeg", "image/png", "image/jpg" , "image/gif");
     private final UserService userService;
     private final UserRepository userRepository;
+    private final VerificationService verificationService;
 
     // Get current user profile
     @GetMapping("/me")
@@ -140,5 +143,13 @@ public class ProfileController {
     @GetMapping("/{id}/stats")
     public ResponseEntity<ProfileStatsDTO> getUserStats(@PathVariable Long id) {
         return ResponseEntity.ok(profileService.getProfileStats(id));
+    }
+
+    // change new email
+    @PostMapping("/change-email")
+    public ResponseEntity<Void> requestEmailChange(@RequestParam String newEmail) {
+        User current = securityUtils.getCurrentUser();
+        verificationService.startEmailChange(current, newEmail, true); // set false to keep access
+        return ResponseEntity.accepted().build();
     }
 }
