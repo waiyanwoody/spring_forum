@@ -38,7 +38,7 @@ public class DataSeeder implements CommandLineRunner {
     @Override
     public void run(String... args) {
         // ✅ Step 1: Ensure admin exists
-        if (userRepository.findByEmail("admin@example.com").isEmpty()) {
+        if (userRepository.findByUsername("admin").isEmpty()) {
             User admin = User.builder()
                     .username("admin")
                     .email("admin@example.com")

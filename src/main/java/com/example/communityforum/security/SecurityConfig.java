@@ -27,7 +27,10 @@ public class SecurityConfig {
         http.csrf(csrf -> csrf.disable())
         .headers(h -> h.frameOptions(f -> f.sameOrigin())) // for H2 console
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/auth/register","/auth/login").permitAll() // public routes
+                        .requestMatchers("/auth/register", "/auth/login",
+                                "/auth/forgot-password", "/auth/reset-password",
+                                "/auth/verify-email",
+                                "/auth/confirm-email-change").permitAll() // public routes
 
                         // Swagger docs (require Basic Auth)
                         .requestMatchers("/docs", "/swagger-ui/**", "/v3/api-docs/**").hasRole("ADMIN")

@@ -41,18 +41,25 @@ public class UserService {
         return new UserResponseDTO(savedUser.getId(), savedUser.getUsername(), savedUser.getEmail());
     }
 
-    //get all users
+    // get all users
     public List<UserResponseDTO> getAllUsers() {
         return userRepository.findAll()
                 .stream()
-                .map(user -> new UserResponseDTO(user.getId(),user.getUsername(),user.getEmail()))
+                .map(this::mapToResponseDTO)
                 .toList();
     }
 
-    //get user by ID
+    private UserResponseDTO mapToResponseDTO(User user) {
+        return new UserResponseDTO(
+                user.getId(), user.getUsername(), user.getEmail(),
+                user.getRole(), user.getCreatedAt().toString(), user.isEmailVerified(),
+                user.getEmailVerifiedAt() != null ? user.getEmailVerifiedAt().toString() : null);
+    }
+
+    // get user by ID
     public Optional<UserResponseDTO> getUserById(Long userId) {
         return userRepository.findById(userId)
-                .map(u -> new UserResponseDTO(u.getId(),u.getUsername(),u.getEmail()));
+                .map(u -> new UserResponseDTO(u.getId(), u.getUsername(), u.getEmail()));
     }
 
     // Get user by email
@@ -64,8 +71,8 @@ public class UserService {
     public Optional<User> getUserByUsername(String username) {
         return userRepository.findByUsername(username);
     }
-    
-    // update profile 
+
+    // update profile
     public ProfileResponseDTO updateProfile(Long userId, ProfileRequest request) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("User", userId));
@@ -99,7 +106,7 @@ public class UserService {
     // update user avatar
     public void updateAvatar(Long userId, String avatarUrl) {
         User user = userRepository.findById(userId)
-                .orElseThrow(()->new ResourceNotFoundException("User",userId));
+                .orElseThrow(() -> new ResourceNotFoundException("User", userId));
         user.setAvatarPath(avatarUrl);
         userRepository.save(user);
     }
@@ -108,6 +115,5 @@ public class UserService {
     public void deleteUser(Long id) {
         userRepository.deleteById(id);
     }
-
 
 }

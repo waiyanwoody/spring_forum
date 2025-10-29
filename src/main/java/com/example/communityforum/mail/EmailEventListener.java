@@ -1,6 +1,6 @@
 package com.example.communityforum.mail;
 
-import com.example.communityforum.events.EmailVerificationRequested;
+import com.example.communityforum.events.VerificationRequested;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.scheduling.annotation.Async;
@@ -15,7 +15,7 @@ public class EmailEventListener {
 
     @Async("appAsyncExecutor")
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
-    public void onVerificationRequested(EmailVerificationRequested e) {
+    public void onVerificationRequested(VerificationRequested e) {
         emailService.sendHtml(e.to(), e.subject(), e.body());
     }
 }

@@ -12,7 +12,7 @@ import org.hibernate.annotations.OnDeleteAction;
         @Index(name = "idx_token_expires", columnList = "expires_at")
 })
 @Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
-public class EmailVerificationToken {
+public class VerificationToken {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -22,7 +22,7 @@ public class EmailVerificationToken {
     @Column(nullable = false, unique = true, length = 1024)
     private String token;
 
-    // token purpose: "EMAIL_VERIFY" or "EMAIL_UPDATE"
+    // token purpose: "EMAIL_VERIFY" or "EMAIL_UPDATE" or "PASSWORD_RESET"
     @Column(nullable = false, length = 50)
     private String purpose;
 

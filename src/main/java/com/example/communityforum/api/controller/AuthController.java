@@ -2,6 +2,8 @@ package com.example.communityforum.api.controller;
 
 import com.example.communityforum.dto.auth.AuthRequest;
 import com.example.communityforum.dto.auth.AuthResponse;
+import com.example.communityforum.dto.auth.ForgotPasswordRequest;
+import com.example.communityforum.dto.auth.ResetPasswordRequest;
 import com.example.communityforum.dto.user.UserRequestDTO;
 import com.example.communityforum.dto.user.UserResponseDTO;
 import com.example.communityforum.exception.DuplicateResourceException;
@@ -155,6 +157,19 @@ public class AuthController {
         HttpHeaders h = new HttpHeaders();
         h.add("Location", redirectUrl);
         return new ResponseEntity<>(h, HttpStatus.FOUND);
+    }
+
+    // forgot password and reset password endpoints
+    @PostMapping("/forgot-password")
+    public ResponseEntity<Void> forgotPassword(@Valid @RequestBody ForgotPasswordRequest req) {
+        verificationService.startPasswordReset(req.getIdentifier());
+        return ResponseEntity.accepted().build(); // always 202
+    }
+
+    @PostMapping("/reset-password")
+    public ResponseEntity<Void> resetPassword(@Valid @RequestBody ResetPasswordRequest req) {
+        verificationService.confirmPasswordReset(req.getIdentifier(), req.getOtp(), req.getNewPassword());
+        return ResponseEntity.ok().build();
     }
 
 }
