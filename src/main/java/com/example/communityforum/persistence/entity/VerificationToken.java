@@ -8,7 +8,7 @@ import org.hibernate.annotations.OnDelete;
 import org.hibernate.annotations.OnDeleteAction;
 
 @Entity
-@Table(name = "email_verification_tokens", indexes = {
+@Table(name = "verification_tokens", indexes = {
         @Index(name = "idx_token_expires", columnList = "expires_at")
 })
 @Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
