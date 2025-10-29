@@ -16,6 +16,6 @@ public class EmailEventListener {
     @Async("appAsyncExecutor")
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void onVerificationRequested(EmailVerificationRequested e) {
-        emailService.send(e.to(), e.subject(), e.body());
+        emailService.sendHtml(e.to(), e.subject(), e.body());
     }
 }
