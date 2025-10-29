@@ -5,6 +5,7 @@ import com.example.communityforum.dto.auth.AuthResponse;
 import com.example.communityforum.dto.user.UserRequestDTO;
 import com.example.communityforum.dto.user.UserResponseDTO;
 import com.example.communityforum.exception.DuplicateResourceException;
+import com.example.communityforum.exception.HttpStatusException;
 import com.example.communityforum.persistence.entity.User;
 import com.example.communityforum.persistence.repository.UserRepository;
 import com.example.communityforum.security.JwtUtil;
@@ -13,8 +14,14 @@ import com.example.communityforum.service.VerificationService;
 
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+
+import java.nio.charset.StandardCharsets;
+
 import org.apache.catalina.security.SecurityUtil;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -22,14 +29,15 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-
+import org.springframework.web.util.UriUtils;
 
 @Tag(name = "Authentication", description = "Endpoints authentication")
 @RestController
 @RequestMapping("/auth")
 public class AuthController {
+
+    @Value("${frontend.url}")
+    private String frontendUrl;
 
     @Autowired
     private AuthenticationManager authenticationManager;
@@ -76,7 +84,7 @@ public class AuthController {
         if (userRepository.existsByEmail(request.getEmail())) {
             throw new DuplicateResourceException("Email is already registered");
         }
-        //create and save new user
+        // create and save new user
         User user = new User();
         user.setUsername(request.getUsername());
         user.setPassword(passwordEncoder.encode(request.getPassword()));
@@ -97,13 +105,26 @@ public class AuthController {
 
         return new AuthResponse(token);
     }
-    
+
     @GetMapping("/verify-email")
-    public ResponseEntity<String> verifyEmail(@RequestParam String token) {
-        verificationService.verify(token);
-        return ResponseEntity.ok("Email verified. You can now use all features.");
+    public ResponseEntity<Void> verifyEmailRedirect(@RequestParam String token) {
+        String redirectUrl;
+
+        try {
+            verificationService.verify(token);
+            redirectUrl = frontendUrl + "/verified?status=ok";
+        } catch (HttpStatusException e) {
+            redirectUrl = frontendUrl + "/verified?status=fail&reason=" +
+                    UriUtils.encode(e.getMessage(), StandardCharsets.UTF_8);
+        } catch (Exception e) {
+            redirectUrl = frontendUrl + "/verified?status=fail&reason=" +
+                    UriUtils.encode("Something went wrong", StandardCharsets.UTF_8);
+        }
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.add("Location", redirectUrl);
+        return new ResponseEntity<>(headers, HttpStatus.FOUND); // 302 redirect
     }
-    
 
     // -- Login --
     @PostMapping("/login")
@@ -111,11 +132,9 @@ public class AuthController {
         Authentication authentication = authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(
                         request.getUsername(),
-                        request.getPassword()
-                )
-        );
+                        request.getPassword()));
         UserDetails userDetails = (UserDetails) authentication.getPrincipal();
-        String token =  jwtUtil.generateToken(userDetails);
+        String token = jwtUtil.generateToken(userDetails);
 
         return new AuthResponse(token);
     }
