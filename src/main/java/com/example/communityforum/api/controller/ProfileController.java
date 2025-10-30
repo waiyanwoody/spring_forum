@@ -65,6 +65,7 @@ public class ProfileController {
 
     // Upload profile avatar
     @PostMapping("/avatar")
+    @PreAuthorize("@securityUtils.isVerified()")
     public ResponseEntity<FileUploadResponseDTO> uploadAvatar(
             @RequestParam("avatar") MultipartFile avatar,
             @RequestParam(value = "userId", required = false) Long userId // optional for admin

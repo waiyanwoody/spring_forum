@@ -18,6 +18,7 @@ public class UserResponseDTO {
     private Long id;
     private String username;
     private String email;
+    private String avatar_path;
     private String role;
     private String created_at;
     private boolean email_verified;
@@ -37,6 +38,11 @@ public class UserResponseDTO {
         dto.setId(user.getId());
         dto.setUsername(user.getUsername());
         dto.setEmail(user.getEmail());
+        dto.setAvatar_path(user.getAvatarPath());
+        dto.setRole(user.getRole());
+        dto.setCreated_at(user.getCreatedAt().toString());
+        dto.setEmail_verified(user.isEmailVerified());
+        dto.setEmail_verified_at(user.getEmailVerifiedAt() != null ? user.getEmailVerifiedAt().toString() : null);
 
         return dto;
 
