@@ -1,11 +1,13 @@
 package com.example.communityforum.api.controller;
 
+import com.example.communityforum.dto.ApiResponse;
 import com.example.communityforum.dto.auth.AuthRequest;
 import com.example.communityforum.dto.auth.AuthResponse;
 import com.example.communityforum.dto.auth.ForgotPasswordRequest;
 import com.example.communityforum.dto.auth.ResetPasswordRequest;
 import com.example.communityforum.dto.user.UserRequestDTO;
 import com.example.communityforum.dto.user.UserResponseDTO;
+import com.example.communityforum.dto.user.UsernameCheckResponse;
 import com.example.communityforum.exception.DuplicateResourceException;
 import com.example.communityforum.exception.HttpStatusException;
 import com.example.communityforum.persistence.entity.User;
@@ -32,6 +34,7 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.util.UriUtils;
+import java.util.Map;
 
 @Tag(name = "Authentication", description = "Endpoints authentication")
 @RestController
@@ -62,16 +65,25 @@ public class AuthController {
     @GetMapping("/me")
     public ResponseEntity<UserResponseDTO> getCurrentUser() {
         User currentUser = securityUtils.getCurrentUser(); // fetch logged-in user
+        return ResponseEntity.ok(UserResponseDTO.fromEntity(currentUser));
+    }
 
-        // Map to DTO (you can use a mapper if available)
-        UserResponseDTO userDTO = UserResponseDTO.builder()
-                .id(currentUser.getId())
-                .username(currentUser.getUsername())
-                .email(currentUser.getEmail())
-                .role(currentUser.getRole())
-                .build();
-
-        return ResponseEntity.ok(userDTO);
+    // check if username is available
+    @GetMapping("/check-username")
+    public ResponseEntity<UsernameCheckResponse> checkUsername(@RequestParam String username) {
+        String u = username == null ? "" : username.trim();
+        // same rule as ProfileRequest: 3-20, letters/numbers/_/-
+        if (u.isEmpty()) {
+            return ResponseEntity.ok(new UsernameCheckResponse(false, false, "Username is required"));
+        }
+        if (u.length() < 3 || u.length() > 20) {
+            return ResponseEntity.ok(new UsernameCheckResponse(false, false, "Must be 3-20 characters"));
+        }
+        if (!u.matches("^[a-zA-Z0-9_-]+$")) {
+            return ResponseEntity.ok(new UsernameCheckResponse(false, false, "Only letters, numbers, hyphens, underscores"));
+        }
+        boolean exists = userRepository.existsByUsernameIgnoreCase(u);
+        return ResponseEntity.ok(new UsernameCheckResponse(true, !exists, exists ? "Username is already taken" : "OK"));
     }
 
     // -- Register --
@@ -95,6 +107,8 @@ public class AuthController {
         user.setEmailVerified(false);
         userRepository.save(user);
 
+        UserResponseDTO userDTO = UserResponseDTO.fromEntity(user);
+
         // Send verification email
         verificationService.sendVerification(user);
 
@@ -105,7 +119,7 @@ public class AuthController {
                         .roles(user.getRole())
                         .build());
 
-        return new AuthResponse(token);
+        return new AuthResponse(token, userDTO);
     }
 
     @GetMapping("/verify-email")
@@ -131,14 +145,27 @@ public class AuthController {
     // -- Login --
     @PostMapping("/login")
     public AuthResponse login(@Valid @RequestBody AuthRequest request) {
-        Authentication authentication = authenticationManager.authenticate(
+
+        // Fetch user details from the database
+        User user = userRepository.findByUsername(request.getUsername())
+            .or(() -> userRepository.findByEmail(request.getUsername()))
+            .orElseThrow(() -> new HttpStatusException(HttpStatus.NOT_FOUND, "User not found"));
+
+        Authentication authentication;
+        try {
+            authentication = authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(
-                        request.getUsername(),
-                        request.getPassword()));
+                    request.getUsername(),
+                    request.getPassword()));
+        } catch (Exception e) {
+            throw new HttpStatusException(HttpStatus.UNAUTHORIZED, "Incorrect password!");
+        }
         UserDetails userDetails = (UserDetails) authentication.getPrincipal();
         String token = jwtUtil.generateToken(userDetails);
 
-        return new AuthResponse(token);
+        UserResponseDTO userDTO = UserResponseDTO.fromEntity(user);
+
+        return new AuthResponse(token, userDTO);
     }
 
     @GetMapping("/confirm-email-change")
@@ -159,17 +186,26 @@ public class AuthController {
         return new ResponseEntity<>(h, HttpStatus.FOUND);
     }
 
-    // forgot password and reset password endpoints
     @PostMapping("/forgot-password")
-    public ResponseEntity<Void> forgotPassword(@Valid @RequestBody ForgotPasswordRequest req) {
+    public ResponseEntity<ApiResponse<Void>> forgotPassword(@Valid @RequestBody ForgotPasswordRequest req) {
         verificationService.startPasswordReset(req.getIdentifier());
-        return ResponseEntity.accepted().build(); // always 202
+
+        ApiResponse<Void> response = new ApiResponse<>(
+                "success",
+                "Password reset initiated",
+                null);
+        return ResponseEntity.ok(response);
     }
 
     @PostMapping("/reset-password")
-    public ResponseEntity<Void> resetPassword(@Valid @RequestBody ResetPasswordRequest req) {
+    public ResponseEntity<ApiResponse<Void>> resetPassword(@Valid @RequestBody ResetPasswordRequest req) {
         verificationService.confirmPasswordReset(req.getIdentifier(), req.getOtp(), req.getNewPassword());
-        return ResponseEntity.ok().build();
+
+        ApiResponse<Void> response = new ApiResponse<>(
+                "success",
+                "Password reset successful",
+                null);
+        return ResponseEntity.ok(response);
     }
 
 }

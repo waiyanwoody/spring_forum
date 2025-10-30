@@ -184,9 +184,7 @@ public class VerificationService {
         // enumeration)
         var user = userRepo.findByUsername(identifier)
                 .or(() -> userRepo.findByEmail(identifier))
-                .orElse(null);
-        if (user == null)
-            return;
+                .orElseThrow(() -> new HttpStatusException(HttpStatus.NOT_FOUND, "User not found"));
 
         tokenRepo.deleteByUser_IdAndPurpose(user.getId(), "PASSWORD_RESET");
 

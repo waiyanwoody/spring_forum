@@ -1,5 +1,6 @@
 package com.example.communityforum.security;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
@@ -8,7 +9,11 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.CorsConfigurationSource;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 
 @Configuration
@@ -16,6 +21,9 @@ import org.springframework.security.config.annotation.authentication.configurati
 public class SecurityConfig {
 
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
+
+    @Value("${frontend.url:http://localhost:3000}")
+    private String frontendUrl;
 
     // Constructor injection
     public SecurityConfig(JwtAuthenticationFilter jwtAuthenticationFilter) {
@@ -25,12 +33,15 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http.csrf(csrf -> csrf.disable())
-        .headers(h -> h.frameOptions(f -> f.sameOrigin())) // for H2 console
+                .cors(Customizer.withDefaults())
+                .headers(h -> h.frameOptions(f -> f.sameOrigin())) // for H2 console
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/auth/register", "/auth/login",
                                 "/auth/forgot-password", "/auth/reset-password",
                                 "/auth/verify-email",
-                                "/auth/confirm-email-change").permitAll() // public routes
+                                "/auth/confirm-email-change",
+                                "/auth/check-username")
+                        .permitAll() // public routes
 
                         // Swagger docs (require Basic Auth)
                         .requestMatchers("/docs", "/swagger-ui/**", "/v3/api-docs/**").hasRole("ADMIN")
@@ -42,11 +53,37 @@ public class SecurityConfig {
                         .anyRequest().authenticated() // everything else requires JWT
                 )
                 .formLogin(form -> form.disable())
-                .httpBasic(basic -> {})
+                .httpBasic(basic -> {
+                })
                 .logout(logout -> logout.disable());
 
         http.addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
         return http.build();
+    }
+
+    @Bean
+    CorsConfigurationSource corsConfigurationSource() {
+        CorsConfiguration config = new CorsConfiguration();
+
+        // support comma-separated list in frontend.url
+        java.util.List<String> origins = java.util.Arrays.stream(frontendUrl.split(","))
+                .map(String::trim)
+                .filter(s -> !s.isBlank())
+                .toList();
+
+        // if you need wildcards like http://localhost:*, switch to
+        // setAllowedOriginPatterns
+        config.setAllowedOrigins(origins);
+        // config.setAllowedOriginPatterns(origins); // use this instead if patterns are
+        // needed
+
+        config.setAllowedMethods(java.util.List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
+        config.setAllowedHeaders(java.util.List.of("Authorization", "Content-Type", "X-Requested-With"));
+        config.setAllowCredentials(true);
+
+        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        source.registerCorsConfiguration("/**", config);
+        return source;
     }
 
     // Used in AuthController for authentication

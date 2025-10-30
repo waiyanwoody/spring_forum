@@ -45,15 +45,8 @@ public class UserService {
     public List<UserResponseDTO> getAllUsers() {
         return userRepository.findAll()
                 .stream()
-                .map(this::mapToResponseDTO)
+                .map(UserResponseDTO::fromEntity)
                 .toList();
-    }
-
-    private UserResponseDTO mapToResponseDTO(User user) {
-        return new UserResponseDTO(
-                user.getId(), user.getUsername(), user.getEmail(),
-                user.getRole(), user.getCreatedAt().toString(), user.isEmailVerified(),
-                user.getEmailVerifiedAt() != null ? user.getEmailVerifiedAt().toString() : null);
     }
 
     // get user by ID
