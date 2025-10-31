@@ -45,9 +45,20 @@ public class JwtUtil {
         return extractExpiration(token).before(new Date());
     }
 
-    public String generateToken(UserDetails userDetails) {
+    public String generateToken(com.example.communityforum.persistence.entity.User user) {
         Map<String, Object> claims = new HashMap<>();
-        return createToken(claims, userDetails.getUsername());
+        claims.put("uid", user.getId());
+        return createToken(claims, user.getUsername()); // keep subject as username for compatibility
+    }
+
+    public Long extractUserId(String token) {
+        try {
+            Claims claims = extractAllClaims(token);
+            Object v = claims.get("uid");
+            return (v instanceof Number) ? ((Number) v).longValue() : null;
+        } catch (Exception e) {
+            return null;
+        }
     }
 
     private String createToken(Map<String, Object> claims, String subject) {
@@ -60,9 +71,13 @@ public class JwtUtil {
                 .compact();
     }
 
-    public Boolean validateToken(String token, UserDetails userDetails) {
-        final String username = extractUsername(token);
-        return (username.equals(userDetails.getUsername()) && !isTokenExpired(token));
+    public boolean validateToken(String token, Long userId) {
+        try {
+            Long tokenUserId = extractUserId(token);
+            return tokenUserId.equals(userId) && !isTokenExpired(token);
+        } catch (Exception e) {
+            return false;
+        }
     }
 
     public UsernamePasswordAuthenticationToken getAuthentication(String token) {

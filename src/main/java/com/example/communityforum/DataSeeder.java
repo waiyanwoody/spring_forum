@@ -40,6 +40,7 @@ public class DataSeeder implements CommandLineRunner {
         // ✅ Step 1: Ensure admin exists
         if (userRepository.findByUsername("admin").isEmpty()) {
             User admin = User.builder()
+                    .fullname("admin")
                     .username("admin")
                     .email("admin@example.com")
                     .password(passwordEncoder.encode("admin123"))
@@ -61,6 +62,7 @@ public class DataSeeder implements CommandLineRunner {
             List<User> users = IntStream.range(0, 10)
                     .mapToObj(i -> {
                         User u = new User();
+                        u.setFullname(faker.name().fullName());
                         u.setUsername(safeSubstring(faker.name().username(), 50));
                         u.setEmail(safeSubstring(faker.internet().emailAddress(), 100));
                         u.setPassword(passwordEncoder.encode("password123"));

@@ -3,6 +3,11 @@ package com.example.communityforum.security;
 import com.example.communityforum.exception.PermissionDeniedException;
 import com.example.communityforum.persistence.entity.User;
 import com.example.communityforum.persistence.repository.UserRepository;
+
+import io.jsonwebtoken.Claims;
+
+import java.util.HashMap;
+
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -99,4 +104,5 @@ public class SecurityUtils {
             throw new PermissionDeniedException("Email not verified. Please verify your email to access this feature.");
         }
     }
+
 }
