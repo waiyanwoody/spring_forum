@@ -19,6 +19,7 @@ public class UserResponseDTO {
     private String fullname;
     private String username;
     private String email;
+    private String bio;
     private String avatar_path;
     private String role;
     private String created_at;
@@ -40,6 +41,7 @@ public class UserResponseDTO {
         dto.setFullname(user.getFullname());
         dto.setUsername(user.getUsername());
         dto.setEmail(user.getEmail());
+        dto.setBio(user.getBio());
         dto.setAvatar_path(user.getAvatarPath());
         dto.setRole(user.getRole());
         dto.setCreated_at(user.getCreatedAt().toString());
