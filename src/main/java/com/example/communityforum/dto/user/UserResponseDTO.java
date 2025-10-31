@@ -16,6 +16,7 @@ import lombok.Setter;
 public class UserResponseDTO {
 
     private Long id;
+    private String fullname;
     private String username;
     private String email;
     private String avatar_path;
@@ -36,6 +37,7 @@ public class UserResponseDTO {
 
         // Map fields from User entity to UserResponseDTO
         dto.setId(user.getId());
+        dto.setFullname(user.getFullname());
         dto.setUsername(user.getUsername());
         dto.setEmail(user.getEmail());
         dto.setAvatar_path(user.getAvatarPath());

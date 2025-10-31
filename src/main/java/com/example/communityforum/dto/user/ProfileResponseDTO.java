@@ -9,6 +9,7 @@ import java.util.List;
 @Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
 public class ProfileResponseDTO {
     private Long id;
+    private String fullname;
     private String username;
     private String email;
     private String bio;
@@ -16,8 +17,10 @@ public class ProfileResponseDTO {
     private List<PostSummaryDTO> posts;  // light-weight info on posts
     private LocalDateTime createdAt;
 
-    public ProfileResponseDTO(Long id, String username, String email, String bio, String avatarUrl, LocalDateTime createdAt) {
+    // Constructor without posts for simplicity
+    public ProfileResponseDTO(Long id, String fullname, String username, String email, String bio, String avatarUrl, LocalDateTime createdAt) {
         this.id = id;
+        this.fullname = fullname;
         this.username = username;
         this.email = email;
         this.bio = bio;

@@ -65,45 +65,6 @@ public class UserService {
         return userRepository.findByUsername(username);
     }
 
-    // update profile
-    public ProfileResponseDTO updateProfile(Long userId, ProfileRequest request) {
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new ResourceNotFoundException("User", userId));
-
-        // username change (unique check only if changed and provided)
-        String username = request.getUsername();
-        if (username != null && !username.equals(user.getUsername())) {
-            if (userRepository.existsByUsername(username)) {
-                throw new DuplicateResourceException("Username is already in use");
-            }
-            user.setUsername(username);
-        }
-
-        // bio and avatar (optional)
-        if (request.getBio() != null)
-            user.setBio(request.getBio());
-        if (request.getAvatarPath() != null)
-            user.setAvatarPath(request.getAvatarPath());
-
-        User updated = userRepository.save(user);
-        return mapToProfileResponseDTO(updated);
-    }
-
-    // map to profile response dto
-    public ProfileResponseDTO mapToProfileResponseDTO(User user) {
-        // response without posts
-        return new ProfileResponseDTO(user.getId(), user.getUsername(), user.getEmail(), user.getBio(),
-                user.getAvatarPath(), user.getCreatedAt());
-    }
-
-    // update user avatar
-    public void updateAvatar(Long userId, String avatarUrl) {
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new ResourceNotFoundException("User", userId));
-        user.setAvatarPath(avatarUrl);
-        userRepository.save(user);
-    }
-
     // Delete user
     public void deleteUser(Long id) {
         userRepository.deleteById(id);

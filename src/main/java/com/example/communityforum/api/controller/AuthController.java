@@ -101,6 +101,7 @@ public class AuthController {
         // create and save new user
         User user = new User();
         user.setUsername(request.getUsername());
+        user.setFullname(request.getUsername()); // temporarily set username as fullname
         user.setPassword(passwordEncoder.encode(request.getPassword()));
         user.setEmail(request.getEmail());
         user.setRole("USER");
@@ -112,12 +113,7 @@ public class AuthController {
         // Send verification email
         verificationService.sendVerification(user);
 
-        String token = jwtUtil.generateToken(
-                org.springframework.security.core.userdetails.User
-                        .withUsername(user.getUsername())
-                        .password(user.getPassword())
-                        .roles(user.getRole())
-                        .build());
+        String token = jwtUtil.generateToken(user);
 
         return new AuthResponse(token, userDTO);
     }
@@ -160,8 +156,7 @@ public class AuthController {
         } catch (Exception e) {
             throw new HttpStatusException(HttpStatus.UNAUTHORIZED, "Incorrect password!");
         }
-        UserDetails userDetails = (UserDetails) authentication.getPrincipal();
-        String token = jwtUtil.generateToken(userDetails);
+        String token = jwtUtil.generateToken(user);
 
         UserResponseDTO userDTO = UserResponseDTO.fromEntity(user);
 
