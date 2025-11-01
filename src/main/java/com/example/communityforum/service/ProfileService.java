@@ -28,7 +28,7 @@ public class ProfileService {
 
     @Value("${profile.avatar.max-size-bytes:2097152}") // 2 MB default
     private long maxAvatarSize;
-    private static final List<String> ALLOWED_TYPES = List.of("image/jpeg", "image/png", "image/jpg", "image/gif");
+    private static final List<String> ALLOWED_TYPES = List.of("image/jpeg", "image/png", "image/jpg", "image/JPG" , "image/gif");
 
     public ProfileService(UserRepository userRepository, PostRepository postRepository,
             FileStorageService fileStorageService) {
@@ -163,15 +163,20 @@ public class ProfileService {
     }
 
     private void validateImage(MultipartFile file, long maxSize, List<String> allowedTypes) {
-        if (file == null || file.isEmpty())
-            throw new FileValidationException("File is empty");
-        if (file.getSize() > maxSize)
-            throw new FileValidationException("File size exceeds limit");
-        if (!allowedTypes.contains(file.getContentType()))
-            throw new FileValidationException("Only JPEG, PNG, and GIF are allowed");
-        String fileName = file.getOriginalFilename();
-        if (fileName == null || !fileName.matches(".*\\.(jpg|jpeg|png|gif)$"))
-            throw new FileValidationException("Invalid file extension");
+        if (file == null || file.isEmpty()) {
+            throw new FileValidationException("No file uploaded or file is empty");
+        }
+
+        if (file.getSize() > maxSize) {
+            throw new FileValidationException(
+                    "File size exceeds limit (" + (maxSize / 1024 / 1024) + " MB max)");
+        }
+
+        String contentType = file.getContentType();
+        if (contentType == null || !allowedTypes.contains(contentType.toLowerCase())) {
+            throw new FileValidationException(
+                    "Invalid file type. Allowed types: " + String.join(", ", allowedTypes));
+        }
     }
 
     private String extractFileName(String path) {
@@ -184,7 +189,7 @@ public class ProfileService {
     // map to profile response dto
     public ProfileResponseDTO mapToProfileResponseDTO(User user) {
         // response without posts
-        return new ProfileResponseDTO(user.getId(),user.getFullname(), user.getUsername(), user.getEmail(), user.getBio(),
+        return new ProfileResponseDTO(user.getId(),user.getFullname(), user.getUsername(), user.getEmail(), user.isEmailVerified(), user.getBio(),
                 user.getAvatarPath(), user.getCreatedAt());
     }
 
