@@ -43,6 +43,7 @@ public class DataSeeder implements CommandLineRunner {
                     .fullname("admin")
                     .username("admin")
                     .email("admin@example.com")
+                    .emailVerified(true)
                     .password(passwordEncoder.encode("admin123"))
                     .role("ADMIN")
                     .bio("System administrator account")
