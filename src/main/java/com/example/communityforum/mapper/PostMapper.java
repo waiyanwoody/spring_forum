@@ -21,8 +21,7 @@ public class PostMapper {
         this.likeRepository = likeRepository;
     }
 
-    public PostListResponseDTO toListDTO(Post post, User currentUser) {
-        long likeCount = likeRepository.countByPostId(post.getId());
+    public PostListResponseDTO toListDTO(Post post, User currentUser, Map<Long,Long> likeCountMap, Map<Long, Long> commentCountMap) {
         boolean liked = currentUser != null && likeRepository.existsByUserAndPost(currentUser, post);
 
         // Get author safely
@@ -38,7 +37,9 @@ public class PostMapper {
         return PostListResponseDTO.builder()
                 .id(post.getId())
                 .title(post.getTitle())
-                .content(post.getContent())
+                .excerpt(post.getContent().length() > 100
+                        ? post.getContent().substring(0, 100) + "..."
+                        : post.getContent())
                 .tags(post.getTags() != null
                         ? post.getTags().stream()
                                 .map(Tag::getName)
@@ -46,7 +47,8 @@ public class PostMapper {
                         : List.of())
                 .createdAt(post.getCreatedAt())
                 .author(authorDTO) //  embedded author info
-                .likeCount(likeCount)
+                .likeCount(likeCountMap.getOrDefault(post.getId(), 0L))
+                .commentCount(commentCountMap.getOrDefault(post.getId(), 0L))
                 .liked(liked)
                 .build();
     }
@@ -80,7 +82,7 @@ public class PostMapper {
 
     }
 
-    public PostSummaryDTO mapToPostSummaryDTO(Post post, Map<Long, Long> likeCountMap) {
+    public PostSummaryDTO mapToPostSummaryDTO(Post post, Map<Long, Long> likeCountMap, Map<Long, Long> commentCountMap) {
         return PostSummaryDTO.builder()
                 .id(post.getId())
                 .title(post.getTitle())
@@ -95,7 +97,7 @@ public class PostMapper {
                         : List.of())
                 .createdAt(post.getCreatedAt().toString())
                 .likeCount(likeCountMap.getOrDefault(post.getId(), 0L))
-                .commentCount(post.getCommentCount())
+                .commentCount(commentCountMap.getOrDefault(post.getId(), 0L))
                 .build();
     }
 }

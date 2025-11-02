@@ -16,6 +16,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -45,6 +47,36 @@ public class FollowService {
         User following = userRepository.findById(followingId).orElseThrow(() -> new ResourceNotFoundException("User to unfollow",followingId));
         followRepository.deleteByFollowerAndFollowing(follower, following);
     }
+
+    @Transactional
+    public Map<String, Object> toggleFollow(Long followerId, Long followingId) {
+        if (followerId.equals(followingId))
+            throw HttpStatusException.of("You cannot follow yourself.", HttpStatus.BAD_REQUEST);
+
+        User follower = userRepository.findById(followerId)
+                .orElseThrow(() -> new ResourceNotFoundException("Follower", followerId));
+        User following = userRepository.findById(followingId)
+                .orElseThrow(() -> new ResourceNotFoundException("User to follow", followingId));
+
+        boolean followed;
+        if (followRepository.existsByFollowerAndFollowing(follower, following)) {
+            followRepository.deleteByFollowerAndFollowing(follower, following);
+            followed = false;
+        } else {
+            followRepository.save(Follow.builder().follower(follower).following(following).build());
+            followed = true;
+        }
+
+        boolean isFriend = followRepository.existsByFollowerAndFollowing(follower, following) &&
+                followRepository.existsByFollowerAndFollowing(following, follower);
+
+        return Map.of(
+                "followingId", followingId,
+                "followed", followed,
+                "isFriend", isFriend
+        );
+    }
+
 
     public List<User> getFollowing(Long userId) {
         User user = userRepository.findById(userId)

@@ -8,10 +8,7 @@ import com.example.communityforum.mapper.PostMapper;
 import com.example.communityforum.persistence.entity.Post;
 import com.example.communityforum.persistence.entity.Tag;
 import com.example.communityforum.persistence.entity.User;
-import com.example.communityforum.persistence.repository.LikeRepository;
-import com.example.communityforum.persistence.repository.PostRepository;
-import com.example.communityforum.persistence.repository.TagRepository;
-import com.example.communityforum.persistence.repository.UserRepository;
+import com.example.communityforum.persistence.repository.*;
 import com.example.communityforum.security.SecurityUtils;
 import lombok.AllArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -39,14 +36,21 @@ public class PostService {
     private final TagRepository tagRepository;
     private final PostMapper  postMapper;
     private final UserRepository userRepository;
+    private final CommentRepository commentRepository;
 
 
     public Page<PostListResponseDTO> getAllPosts(Pageable pageable) {
-        Page<Post> posts = postRepository.findAll(pageable);
+        Page<Post> postPage = postRepository.findAll(pageable);
 
         User user = securityUtils.getCurrentUser();
+        List<Long> postIds = postPage.getContent()
+                .stream()
+                .map(Post::getId)
+                .toList();
+        Map<Long, Long> likeCountMap = getLikeCountMap(postIds);
+        Map<Long, Long> commentCountMap = getCommentCountMap(postIds);
 
-        return posts.map(post -> postMapper.toListDTO(post, user));
+        return postPage.map(post -> postMapper.toListDTO(post, user, likeCountMap,commentCountMap));
 
     }
 
@@ -56,6 +60,24 @@ public class PostService {
         User user = securityUtils.getCurrentUser();
 
        return postMapper.toDetailDTO(post,user);
+    }
+
+    // get like count for post
+    private Map<Long, Long> getLikeCountMap(List<Long> postIds) {
+        List<Object[]> counts = likeRepository.countLikesByPostIds(postIds);
+        return counts.stream().collect(Collectors.toMap(
+                row -> (Long) row[0],
+                row -> (Long) row[1]
+        ));
+    }
+
+    // get comment count for post
+    private Map<Long, Long> getCommentCountMap(List<Long> postIds) {
+        List<Object[]> counts = commentRepository.countCommentsByPostIds(postIds);
+        return counts.stream().collect(Collectors.toMap(
+                row -> (Long) row[0],
+                row -> (Long) row[1]
+        ));
     }
 
     // get all posts by user id
@@ -68,19 +90,17 @@ public class PostService {
         Pageable pageable = PageRequest.of(page - 1, pageSize, Sort.by("createdAt").descending());
         Page<Post> postPage = postRepository.findAllByUser_Id(userId, pageable);
 
-        // 3️⃣ Fetch like counts in bulk
-        List<Object[]> likeCounts = likeRepository.countLikesByPostIds(
-                postPage.getContent().stream().map(Post::getId).toList()
-        );
-        Map<Long, Long> likeCountMap = likeCounts.stream()
-                .collect(Collectors.toMap(
-                        row -> (Long) row[0],
-                        row -> (Long) row[1]
-                ));
+        // 3️⃣ Fetch like counts and comment counts in bulk
+        List<Long> postIds = postPage.getContent()
+                .stream()
+                .map(Post::getId)
+                .toList();
+        Map<Long, Long> likeCountMap = getLikeCountMap(postIds);
+        Map<Long, Long> commentCountMap = getCommentCountMap(postIds);
 
         // 4️⃣ Map posts using helper function
         List<PostSummaryDTO> postDTOs = postPage.getContent().stream()
-                .map(post -> postMapper.mapToPostSummaryDTO(post, likeCountMap))
+                .map(post -> postMapper.mapToPostSummaryDTO(post, likeCountMap,commentCountMap))
                 .toList();
 
         // 5️⃣ Author info

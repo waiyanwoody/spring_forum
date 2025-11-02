@@ -19,7 +19,7 @@ public class PostListResponseDTO {
 
     private Long id;
     private String title;
-    private String content;
+    private String excerpt;
     private List<String> tags;
 
     private AuthorDTO author;
@@ -28,5 +28,6 @@ public class PostListResponseDTO {
 
     private long likeCount;
     private boolean liked;
+    private long commentCount;
 
 }
