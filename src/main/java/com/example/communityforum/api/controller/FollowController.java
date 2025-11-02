@@ -12,6 +12,7 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
 @Tag(name = "Follows", description = "Endpoints for managing user follows")
 @RestController
@@ -34,6 +35,17 @@ public class FollowController {
         User currentUser = securityUtils.getCurrentUser();
         followService.unfollowUser(currentUser.getId(), followingId);
         return ResponseEntity.ok("Unfollowed successfully");
+    }
+
+    // toggle follow
+    @PostMapping("/{followingId}/toggle")
+    public ResponseEntity<Map<String, Object>> toggleFollow(@PathVariable Long followingId) {
+        User currentUser = securityUtils.getCurrentUser();
+
+        Map<String, Object> result = followService.toggleFollow(currentUser.getId(), followingId);
+
+        // result contains both followed and isFriend
+        return ResponseEntity.ok(result);
     }
 
     @GetMapping("/followers/{userId}")

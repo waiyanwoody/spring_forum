@@ -8,9 +8,11 @@ import com.example.communityforum.dto.user.ProfileStatsDTO;
 import com.example.communityforum.exception.FileValidationException;
 import com.example.communityforum.exception.ResourceNotFoundException;
 import com.example.communityforum.persistence.entity.User;
+import com.example.communityforum.persistence.repository.FollowRepository;
 import com.example.communityforum.persistence.repository.LikeRepository;
 import com.example.communityforum.persistence.repository.PostRepository;
 import com.example.communityforum.persistence.repository.UserRepository;
+import com.example.communityforum.security.SecurityUtils;
 import jakarta.transaction.Transactional;
 import lombok.NoArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
@@ -27,17 +29,23 @@ public class ProfileService {
     private final PostRepository postRepository;
     private final FileStorageService fileStorageService;
     private final LikeRepository likeRepository;
+    private final FollowRepository  followRepository;
+    private final SecurityUtils securityUtils;
 
     @Value("${profile.avatar.max-size-bytes:2097152}") // 2 MB default
     private long maxAvatarSize;
     private static final List<String> ALLOWED_TYPES = List.of("image/jpeg", "image/png", "image/jpg", "image/JPG" , "image/gif");
 
     public ProfileService(UserRepository userRepository, PostRepository postRepository,
-                          FileStorageService fileStorageService, LikeRepository likeRepository) {
+                          FileStorageService fileStorageService, LikeRepository likeRepository,
+                          FollowRepository followRepository,
+                          SecurityUtils securityUtils) {
         this.userRepository = userRepository;
         this.postRepository = postRepository;
         this.fileStorageService = fileStorageService;
         this.likeRepository  = likeRepository;
+        this.followRepository = followRepository;
+        this.securityUtils = securityUtils;
     }
 
     // Get current user's profile
@@ -53,7 +61,10 @@ public class ProfileService {
     }
 
     private ProfileResponseDTO toProfileDTO(User user) {
-
+        User currentUser = securityUtils.getCurrentUser();
+        boolean followed = followRepository.existsByFollowerAndFollowing(currentUser, user);
+        boolean followsBack = followRepository.existsByFollowerAndFollowing(user, currentUser);
+        boolean isFriend = followed && followsBack;
         return ProfileResponseDTO.builder()
                 .id(user.getId())
                 .fullname(user.getFullname())
@@ -63,6 +74,8 @@ public class ProfileService {
                 .avatar_path(user.getAvatarPath())
                 .bio(user.getBio())
                 .createdAt(user.getCreatedAt())
+                .followed(followed)
+                .isFriend(isFriend)
                 .build();
     }
 
