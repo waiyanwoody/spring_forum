@@ -1,8 +1,7 @@
 package com.example.communityforum.service;
 
-import com.example.communityforum.dto.post.PostListResponseDTO;
-import com.example.communityforum.dto.post.PostRequestDTO;
-import com.example.communityforum.dto.post.PostDetailResponseDTO;
+import com.example.communityforum.dto.post.*;
+import com.example.communityforum.dto.user.UserSummaryDTO;
 import com.example.communityforum.exception.PermissionDeniedException;
 import com.example.communityforum.exception.ResourceNotFoundException;
 import com.example.communityforum.mapper.PostMapper;
@@ -12,16 +11,21 @@ import com.example.communityforum.persistence.entity.User;
 import com.example.communityforum.persistence.repository.LikeRepository;
 import com.example.communityforum.persistence.repository.PostRepository;
 import com.example.communityforum.persistence.repository.TagRepository;
+import com.example.communityforum.persistence.repository.UserRepository;
 import com.example.communityforum.security.SecurityUtils;
 import lombok.AllArgsConstructor;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -34,6 +38,7 @@ public class PostService {
     private final LikeRepository  likeRepository;
     private final TagRepository tagRepository;
     private final PostMapper  postMapper;
+    private final UserRepository userRepository;
 
 
     public Page<PostListResponseDTO> getAllPosts(Pageable pageable) {
@@ -53,6 +58,48 @@ public class PostService {
        return postMapper.toDetailDTO(post,user);
     }
 
+    // get all posts by user id
+    public UserPostsResponseDTO getPostsByUserId(Long userId, int page, int pageSize) {
+        // 1️⃣ Fetch user
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        // 2️⃣ Pagination
+        Pageable pageable = PageRequest.of(page - 1, pageSize, Sort.by("createdAt").descending());
+        Page<Post> postPage = postRepository.findAllByUser_Id(userId, pageable);
+
+        // 3️⃣ Fetch like counts in bulk
+        List<Object[]> likeCounts = likeRepository.countLikesByPostIds(
+                postPage.getContent().stream().map(Post::getId).toList()
+        );
+        Map<Long, Long> likeCountMap = likeCounts.stream()
+                .collect(Collectors.toMap(
+                        row -> (Long) row[0],
+                        row -> (Long) row[1]
+                ));
+
+        // 4️⃣ Map posts using helper function
+        List<PostSummaryDTO> postDTOs = postPage.getContent().stream()
+                .map(post -> postMapper.mapToPostSummaryDTO(post, likeCountMap))
+                .toList();
+
+        // 5️⃣ Author info
+        UserSummaryDTO authorDTO = UserSummaryDTO.builder()
+                .id(user.getId())
+                .username(user.getUsername())
+                .avatar_path(user.getAvatarPath())
+                .build();
+
+        // 6️⃣ Return response
+        return UserPostsResponseDTO.builder()
+                .author(authorDTO)
+                .posts(postDTOs)
+                .page(page)
+                .pageSize(pageSize)
+                .totalPosts(postPage.getTotalElements())
+                .build();
+    }
+
     public PostDetailResponseDTO addPost(PostRequestDTO request) {
         User currentUser = securityUtils.getCurrentUser();
         Post post = new Post();
@@ -69,6 +116,9 @@ public class PostService {
     }
     
     private Set<Tag> processTags(List<String> tagNames) {
+        if (tagNames == null || tagNames.isEmpty()) {
+            return new HashSet<>(); // return an empty set instead of null
+        }
         return tagNames.stream()
                 .filter(tagName -> tagName != null && !tagName.trim().isEmpty())
                 .map(tagName -> tagRepository.findByNameIgnoreCase(tagName.trim())

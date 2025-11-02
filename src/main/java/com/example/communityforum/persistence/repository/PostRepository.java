@@ -16,6 +16,8 @@ import java.util.Optional;
 @Repository
 public interface PostRepository extends JpaRepository<Post, Long> {
 
+    Page<Post> findAllByUser_Id(Long userId, Pageable pageable);
+
     @Query("select p from Post p where p.id = :id and p.deletedAt is null")
     Optional<Post> findByIdAndNotDeleted(@Param("id") Long id);
 
@@ -28,6 +30,5 @@ public interface PostRepository extends JpaRepository<Post, Long> {
     // find post by user that current user is following
     @Query("SELECT p FROM Post p WHERE p.user IN :followingUsers ORDER BY p.createdAt DESC")
     List<Post> findPostsByFollowing(@Param("followingUsers") List<User> followingUsers);
-
 
 }

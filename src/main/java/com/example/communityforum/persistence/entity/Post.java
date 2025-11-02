@@ -45,6 +45,10 @@ public class Post {
     @JsonIgnore
     private List<Comment> comments;
 
+    public long getCommentCount() {
+        return comments != null ? comments.size() : 0;
+    }
+
     @Column(name = "deleted_at")
     private LocalDateTime deletedAt;
 

@@ -2,7 +2,11 @@ package com.example.communityforum.persistence.repository;
 
 import com.example.communityforum.persistence.entity.*;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
+
+import java.util.List;
 
 @Repository
 public interface LikeRepository extends JpaRepository<Like, Long> {
@@ -18,6 +22,9 @@ public interface LikeRepository extends JpaRepository<Like, Long> {
 
     // For post likes
     long countByPostId(Long postId);
+
+    @Query("SELECT l.post.id, COUNT(l) FROM Like l WHERE l.post.id IN :postIds GROUP BY l.post.id")
+    List<Object[]> countLikesByPostIds(@Param("postIds") List<Long> postIds);
 
     // For comment likes
     long countByCommentId(Long commentId);
