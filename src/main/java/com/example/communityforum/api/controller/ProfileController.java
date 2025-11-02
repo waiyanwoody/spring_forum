@@ -57,11 +57,11 @@ public class ProfileController {
         return ResponseEntity.ok(profileService.getCurrentUserProfile(currentUser));
     }
 
-    // Get any user profile (Admin only)
-    @PreAuthorize("hasRole('ADMIN')")
-    @GetMapping("/{id}")
-    public ResponseEntity<ProfileResponseDTO> getUserProfileById(@PathVariable Long id) {
-        return ResponseEntity.ok(profileService.getUserProfileById(id));
+    // Get profile by username
+    @GetMapping("/{username}")
+    public ResponseEntity<ProfileResponseDTO> getUserProfileById(@PathVariable String username) {
+        long userId = userRepository.findByUsername(username).get().getId();
+        return ResponseEntity.ok(profileService.getUserProfileById(userId));
     }
 
     @PostMapping(value = "/avatar", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
@@ -98,7 +98,7 @@ public class ProfileController {
     
     // Get profile statistics
     @GetMapping("/{id}/stats")
-    public ResponseEntity<ProfileStatsDTO> getUserStats(@PathVariable Long id) {
+    public ResponseEntity<ProfileStatsDTO> getUserStats(@PathVariable long id) {
         return ResponseEntity.ok(profileService.getProfileStats(id));
     }
 

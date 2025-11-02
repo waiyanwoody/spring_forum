@@ -23,7 +23,7 @@ public class PostDetailResponseDTO {
     private List<String> tags;
     private LocalDateTime createdAt = LocalDateTime.now();
 
-    private UserResponseDTO user;
+    private UserResponseDTO author;
 
     private long likeCount;
     private boolean liked;

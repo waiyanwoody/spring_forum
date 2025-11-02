@@ -8,6 +8,7 @@ import com.example.communityforum.dto.user.ProfileStatsDTO;
 import com.example.communityforum.exception.FileValidationException;
 import com.example.communityforum.exception.ResourceNotFoundException;
 import com.example.communityforum.persistence.entity.User;
+import com.example.communityforum.persistence.repository.LikeRepository;
 import com.example.communityforum.persistence.repository.PostRepository;
 import com.example.communityforum.persistence.repository.UserRepository;
 import jakarta.transaction.Transactional;
@@ -25,16 +26,18 @@ public class ProfileService {
     private final UserRepository userRepository;
     private final PostRepository postRepository;
     private final FileStorageService fileStorageService;
+    private final LikeRepository likeRepository;
 
     @Value("${profile.avatar.max-size-bytes:2097152}") // 2 MB default
     private long maxAvatarSize;
     private static final List<String> ALLOWED_TYPES = List.of("image/jpeg", "image/png", "image/jpg", "image/JPG" , "image/gif");
 
     public ProfileService(UserRepository userRepository, PostRepository postRepository,
-            FileStorageService fileStorageService) {
+                          FileStorageService fileStorageService, LikeRepository likeRepository) {
         this.userRepository = userRepository;
         this.postRepository = postRepository;
         this.fileStorageService = fileStorageService;
+        this.likeRepository  = likeRepository;
     }
 
     // Get current user's profile
@@ -42,7 +45,7 @@ public class ProfileService {
         return toProfileDTO(currentUser);
     }
 
-    // Get profile by user ID (for admin)
+    // Get profile by user ID
     public ProfileResponseDTO getUserProfileById(Long userId) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("User", userId));
@@ -50,16 +53,6 @@ public class ProfileService {
     }
 
     private ProfileResponseDTO toProfileDTO(User user) {
-
-        List<PostSummaryDTO> postSummaries = user.getPosts() == null ? List.of()
-                : user.getPosts().stream()
-                        .map(post -> PostSummaryDTO.builder()
-                                .id(post.getId())
-                                .title(post.getTitle())
-                                .excerpt(generateExcerpt(post.getContent()))
-                                .createdAt(post.getCreatedAt().toString())
-                                .build())
-                        .collect(Collectors.toList());
 
         return ProfileResponseDTO.builder()
                 .id(user.getId())
@@ -70,12 +63,11 @@ public class ProfileService {
                 .avatar_path(user.getAvatarPath())
                 .bio(user.getBio())
                 .createdAt(user.getCreatedAt())
-                .posts(postSummaries)
                 .build();
     }
 
     // Get profile statistics
-    public ProfileStatsDTO getProfileStats(Long userId) {
+    public ProfileStatsDTO getProfileStats(long userId) {
         var p = userRepository.getProfileCounts(userId);
         return new ProfileStatsDTO(
                 p.getFollowingCount(),

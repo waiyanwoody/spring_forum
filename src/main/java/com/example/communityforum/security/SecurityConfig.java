@@ -69,6 +69,7 @@ public class SecurityConfig {
                         .requestMatchers("/ws/**", "/index.html").permitAll()
                         .anyRequest().authenticated() // everything else requires JWT
                 )
+                .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
                 .formLogin(form -> form.disable())
                 .httpBasic(httpBasic -> httpBasic.disable())
                 .exceptionHandling(e -> e.authenticationEntryPoint((req, res, ex) -> {
