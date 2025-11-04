@@ -35,9 +35,9 @@ jobs:
 
       - name: Wait for Postgres
         run: |
-          echo "Waiting for Postgres to be ready..."
+          echo "Waiting for Postgres..."
           for i in {1..30}; do
-            pg_isready -h postgres -U postgres && break
+            pg_isready -h postgres -U testuser && break
             echo "Postgres not ready yet, retrying..."
             sleep 2
           done
