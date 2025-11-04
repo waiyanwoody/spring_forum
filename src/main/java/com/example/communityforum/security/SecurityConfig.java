@@ -62,7 +62,7 @@ public class SecurityConfig {
                         .permitAll() // public routes
 
                         /// Exclude swagger from JWT chain
-                        .requestMatchers("/docs", "/swagger-ui/**", "/v3/api-docs/**").permitAll()
+                        .requestMatchers("/docs", "/swagger-ui/**", "/v3/api-docs/**", "/notification-test.html").permitAll()
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")
                         .requestMatchers("/auth/me").authenticated()
                         .requestMatchers("/api/user/**").hasAnyRole("USER", "ADMIN")

@@ -21,6 +21,7 @@ public class PostListResponseDTO {
     private String title;
     private String excerpt;
     private List<String> tags;
+    private String slug;
 
     private AuthorDTO author;
 
