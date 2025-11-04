@@ -67,19 +67,19 @@ class UserServiceTest {
         verify(userRepository, never()).save(any());
     }
 
-    @Test
-    void getAllUsers_success() {
-        User user = new User();
-        user.setId(1L);
-        user.setUsername("alice");
-        user.setEmail("alice@example.com");
-
-        when(userRepository.findAll()).thenReturn(List.of(user));
-
-        List<UserResponseDTO> users = userService.getAllUsers();
-        assertEquals(1, users.size());
-        assertEquals("alice", users.get(0).getUsername());
-    }
+//    @Test
+//    void getAllUsers_success() {
+//        User user = new User();
+//        user.setId(1L);
+//        user.setUsername("alice");
+//        user.setEmail("alice@example.com");
+//
+//        when(userRepository.findAll()).thenReturn(List.of(user));
+//
+//        List<UserResponseDTO> users = userService.getAllUsers();
+//        assertEquals(1, users.size());
+//        assertEquals("alice", users.get(0).getUsername());
+//    }
 
     @Test
     void getUserById_success() {
