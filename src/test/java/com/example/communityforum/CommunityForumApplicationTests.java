@@ -10,10 +10,9 @@ import com.example.communityforum.persistence.repository.UserRepository;
 class CommunityForumApplicationTests {
 
     @MockBean
-    private UserRepository userRepository;
+    private UserRepository userRepository; // Mocked so context loads without DB issues
 
     @Test
     void contextLoads() {
     }
-
 }
