@@ -8,21 +8,6 @@ jobs:
   build:
     runs-on: ubuntu-latest
 
-    services:
-      postgres:
-        image: postgres:14
-        ports:
-          - 5432:5432
-        env:
-          POSTGRES_USER: testuser
-          POSTGRES_PASSWORD: testpass
-          POSTGRES_DB: testdb
-        options: >-
-          --health-cmd pg_isready
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -32,15 +17,6 @@ jobs:
         with:
           java-version: '17'
           distribution: 'temurin'
-
-      - name: Wait for Postgres
-        run: |
-          echo "Waiting for Postgres..."
-          for i in {1..30}; do
-            pg_isready -h postgres -U testuser && break
-            echo "Postgres not ready yet, retrying..."
-            sleep 2
-          done
 
       - name: Set Spring profile
         run: echo "SPRING_PROFILES_ACTIVE=ci" >> $GITHUB_ENV
