@@ -22,4 +22,9 @@ public class Tag {
     @ManyToMany(mappedBy = "tags", fetch = FetchType.LAZY)
     @JsonIgnore
     private Set<Post> posts = new HashSet<>();
+
+    // Custom constructor for creating a Tag with just a name
+    public Tag(String name) {
+        this.name = name;
+    }
 }

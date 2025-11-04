@@ -16,7 +16,8 @@ import org.hibernate.annotations.Where;
         name = "posts",
         indexes = {
                 @Index(name = "idx_posts_deleted_at", columnList = "deleted_at"),
-                @Index(name = "idx_posts_deleted_by", columnList = "deleted_by")
+                @Index(name = "idx_posts_deleted_by", columnList = "deleted_by"),
+                @Index(name = "idx_posts_slug", columnList = "slug")
         }
 )
 @Where(clause = "deleted_at IS NULL")
@@ -34,6 +35,9 @@ public class Post {
 
     @Column(length = 5000)
     private String content;
+
+    @Column(nullable = false, unique = true, length = 255)
+    private String slug;
 
     private LocalDateTime createdAt = LocalDateTime.now();
 

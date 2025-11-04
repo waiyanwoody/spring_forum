@@ -88,11 +88,14 @@ public class ProfileController {
 
     // multipart combined update (no ProfileRequest in signature)
     @PutMapping(path = "/with-avatar", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    @PreAuthorize("@securityUtils.isVerified()")
     public ResponseEntity<ProfileResponseDTO> updateProfileWithAvatar(
             @ModelAttribute ProfileRequest request, // form fields
             @RequestPart(value = "avatar", required = false) MultipartFile avatar) { // optional file
         User currentUser = securityUtils.getCurrentUser();
+
+        //check email verified before update
+        securityUtils.checkEmailVerified(currentUser);
+
         return ResponseEntity.ok(profileService.updateProfile(currentUser.getId(), request, avatar));
     }
     

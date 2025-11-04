@@ -131,8 +131,28 @@ public class PostService {
 
         post.setTags(processTags(request.getTags()));
 
+        // generate slug
+        String slug = generateSlug(request.getTitle());
+        post.setSlug(slug);
+
         postRepository.save(post);
         return postMapper.toDetailDTO(post, currentUser);
+    }
+
+    private String generateSlug(String title) {
+        String baseSlug = title.toLowerCase()
+                .replaceAll("[^a-z0-9\\s-]", "")  // remove special chars
+                .replaceAll("\\s+", "-");         // replace spaces with hyphen
+
+        String slug = baseSlug;
+        int counter = 1;
+
+        // ensure uniqueness by checking repository
+        while (postRepository.existsBySlug(slug)) {
+            slug = baseSlug + "-" + counter++;
+        }
+
+        return slug;
     }
     
     private Set<Tag> processTags(List<String> tagNames) {

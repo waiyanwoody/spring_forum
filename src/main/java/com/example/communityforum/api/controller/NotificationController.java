@@ -1,7 +1,9 @@
 package com.example.communityforum.api.controller;
 
+import com.example.communityforum.persistence.entity.User;
 import com.example.communityforum.persistence.repository.NotificationRepository;
 
+import com.example.communityforum.security.SecurityUtils;
 import io.swagger.v3.oas.annotations.tags.Tag;
 
 import com.example.communityforum.persistence.entity.Notification;
@@ -20,10 +22,17 @@ public class NotificationController {
 
     private final NotificationRepository notificationRepository;
     private final SimpMessagingTemplate messagingTemplate;
+    private final SecurityUtils securityUtils;
 
 
     @GetMapping("/{userId}")
     public List<Notification> getUserNotifications(@PathVariable Long userId) {
+        User currentUser = securityUtils.getCurrentUser();
+
+        // If current user is not admin, override the userId with current user's ID
+        if (!currentUser.getRole().equals("ADMIN")) {
+            userId = currentUser.getId();
+        }
         return notificationRepository.findByReceiverIdOrderByCreatedAtDesc(userId);
     }
 

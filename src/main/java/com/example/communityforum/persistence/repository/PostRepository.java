@@ -31,4 +31,6 @@ public interface PostRepository extends JpaRepository<Post, Long> {
     @Query("SELECT p FROM Post p WHERE p.user IN :followingUsers ORDER BY p.createdAt DESC")
     List<Post> findPostsByFollowing(@Param("followingUsers") List<User> followingUsers);
 
+    boolean existsBySlug(String slug);
+
 }

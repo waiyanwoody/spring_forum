@@ -7,7 +7,9 @@ import org.springframework.boot.CommandLineRunner;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -18,15 +20,18 @@ public class DataSeeder implements CommandLineRunner {
     private final PostRepository postRepository;
     private final CommentRepository commentRepository;
     private final PasswordEncoder passwordEncoder;
+    private final TagRepository tagRepository;
     private final Faker faker = new Faker();
 
     public DataSeeder(UserRepository userRepository,
                       PostRepository postRepository,
                       CommentRepository commentRepository,
+                      TagRepository tagRepository,
                       PasswordEncoder passwordEncoder) {
         this.userRepository = userRepository;
         this.postRepository = postRepository;
         this.commentRepository = commentRepository;
+        this.tagRepository = tagRepository;
         this.passwordEncoder = passwordEncoder;
     }
 
@@ -75,16 +80,27 @@ public class DataSeeder implements CommandLineRunner {
             List<Post> posts = IntStream.range(0, 50)
                     .mapToObj(i -> {
                         Post p = new Post();
-                        p.setTitle(safeSubstring(faker.book().title(), 200));
+                        String title = safeSubstring(faker.book().title(), 200);
+                        p.setTitle(title);
 
-                        // Generate 3-7 paragraphs of content
+                        String slug = title.toLowerCase()
+                                .replaceAll("[^a-z0-9\\s-]", "")
+                                .replaceAll("\\s+", "-");
+                        p.setSlug(slug + "-" + faker.number().digits(4));
+
                         List<String> paragraphs = faker.lorem().paragraphs(faker.number().numberBetween(3, 8));
-                        String content = String.join("\n\n", paragraphs); // separate paragraphs by new lines
+                        String content = String.join("\n\n", paragraphs);
+                        p.setContent(safeSubstring(content, 5000));
 
-                        p.setContent(safeSubstring(content, 5000)); // increase maxLength to allow longer content
                         p.setUser(users.get(faker.number().numberBetween(0, users.size())));
+
+                        // --- Tags ---
+                        // no tags for now
+
                         return p;
-                    }).collect(Collectors.toList());
+                    })
+                    .collect(Collectors.toList());
+
             postRepository.saveAll(posts);
 
             // --- Comments ---

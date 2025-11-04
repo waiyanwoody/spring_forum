@@ -1,5 +1,6 @@
 package com.example.communityforum.security;
 
+import com.example.communityforum.exception.EmailNotVerifiedException;
 import com.example.communityforum.exception.PermissionDeniedException;
 import com.example.communityforum.persistence.entity.User;
 import com.example.communityforum.persistence.repository.UserRepository;
@@ -97,6 +98,12 @@ public class SecurityUtils {
     public boolean isVerified() {
         User currentUser = getCurrentUser();
         return currentUser.isEmailVerified();
+    }
+
+    public void checkEmailVerified(User user) {
+        if (!user.isEmailVerified()) {
+            throw new EmailNotVerifiedException();
+        }
     }
 
     public void requireVerified() {

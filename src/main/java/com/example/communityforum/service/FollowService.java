@@ -65,6 +65,10 @@ public class FollowService {
         } else {
             followRepository.save(Follow.builder().follower(follower).following(following).build());
             followed = true;
+            publisher.publishEvent(NewFollowerEvent.builder()
+                    .followerId(followerId)
+                    .followingId(followingId)
+                    .build());
         }
 
         boolean isFriend = followRepository.existsByFollowerAndFollowing(follower, following) &&
