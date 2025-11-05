@@ -1,5 +1,6 @@
 name: Java test
 
+# only run on triggers main branch
 on:
   push:
     branches: [ main ]
