@@ -9,11 +9,7 @@ import com.example.communityforum.persistence.repository.UserRepository;
 @SpringBootTest
 class CommunityForumApplicationTests {
 
-    @MockBean
-    private UserRepository userRepository; // Mocked to avoid real DB dependency
-
     @Test
     void contextLoads() {
-        // Spring Boot context loads successfully
     }
 }
