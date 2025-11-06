@@ -56,13 +56,15 @@ public class UserService {
     }
 
     // Get user by email
-    public Optional<User> getUserByEmail(String email) {
-        return userRepository.findByEmail(email);
+    public Optional<UserResponseDTO> getUserByEmail(String email) {
+        return userRepository.findByEmail(email)
+                .map(u -> new UserResponseDTO(u.getId(), u.getUsername(), u.getEmail()));
     }
 
     // Get user by username
-    public Optional<User> getUserByUsername(String username) {
-        return userRepository.findByUsername(username);
+    public Optional<UserResponseDTO> getUserByUsername(String username) {
+        return userRepository.findByUsername(username)
+                .map(u -> new UserResponseDTO(u.getId(), u.getUsername(), u.getEmail()));
     }
 
     // Delete user
