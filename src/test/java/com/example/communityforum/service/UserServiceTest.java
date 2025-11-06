@@ -82,6 +82,40 @@ class UserServiceTest {
     }
 
     @Test
+    void getUserByUsername_success() {
+        User user = new User();
+        user.setId(1L);
+        user.setUsername("alice");
+        user.setEmail("alice@example.com");
+
+        when(userRepository.findByUsername("alice")).thenReturn(Optional.of(user));
+
+        Optional<UserResponseDTO> result = userService.getUserByUsername("alice");
+        assertTrue(result.isPresent());
+        assertEquals("alice", result.get().getUsername());
+    }
+
+    @Test
+    void getUserByEmail_success() {
+        User user = new User();
+        user.setId(1L);
+        user.setUsername("alice");
+        user.setEmail("alice@example.com");
+
+        when(userRepository.findByEmail("alice@example.com")).thenReturn(Optional.of(user));
+
+        Optional<UserResponseDTO> result = userService.getUserByEmail("alice@example.com");
+        assertTrue(result.isPresent());
+        assertEquals("alice", result.get().getUsername());
+    }
+
+    @Test
+    void getUserById_notFound_returnsEmpty() {
+        Optional<UserResponseDTO> result = userService.getUserById(1L);
+        assertFalse(result.isPresent());
+    }
+
+    @Test
     void deleteUser_callsRepository() {
         userService.deleteUser(1L);
         verify(userRepository, times(1)).deleteById(1L);
