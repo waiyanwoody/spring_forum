@@ -42,7 +42,7 @@ class UserControllerSecurityTest {
 
     // Mock missing beans so the context can load
     @MockitoBean
-    private JwtUtil jwtUtil; // mock JwtUtil so JwtAuthenticationFilter can initialize
+    private JwtUtil jwtUtil;
 
     // ADMIN can access
     @Test
