@@ -25,7 +25,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @ActiveProfiles("ci")
 @WebMvcTest(UserController.class)
-// @AutoConfigureMockMvc(addFilters = false)
+@AutoConfigureMockMvc(addFilters = false)
 class UserControllerSecurityTest {
 
     @Autowired
