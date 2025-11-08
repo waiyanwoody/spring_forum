@@ -69,7 +69,7 @@ public class UserFlowIntegrationTest {
     }
 
     @Test
-    void testGetUserByUsername_WithInvalidJWT() {
+    void testGetUserByUsername_WithInvalidJWT_ShouldReturn401() {
         String url = "http://localhost:" + port + "/api/admin/users/username/alice";
 
         HttpHeaders headers = new HttpHeaders();
@@ -78,6 +78,17 @@ public class UserFlowIntegrationTest {
 
         ResponseEntity<String> response = restTemplate.exchange(url, HttpMethod.GET, request, String.class);
 
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
+    }
+
+    @Test
+    void testGetUserByUsername_WithoutJWT_ShouldReturn401() {
+        String url = "http://localhost:" + port + "/api/admin/users/username/alice";
+
+        ResponseEntity<String> response =
+                restTemplate.getForEntity(url, String.class);
+
+        // Expect unauthorized
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
     }
 }
