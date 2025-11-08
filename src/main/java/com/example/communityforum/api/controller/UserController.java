@@ -23,6 +23,13 @@ public class UserController {
         this.userService = userService;
     }
 
+    // create user
+    @PostMapping
+    public ResponseEntity<UserResponseDTO> createUser(@Valid @RequestBody UserRequestDTO dto) {
+        UserResponseDTO createdUser = userService.createUser(dto);
+        return ResponseEntity.ok(createdUser);
+    }
+
     // Get all users
     @GetMapping
     public ResponseEntity<List<UserResponseDTO>> getAllUsers() {
