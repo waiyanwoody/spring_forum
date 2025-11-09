@@ -89,7 +89,6 @@ public class PostController {
 
     //Update post by id
     @PutMapping("/{id}")
-    @PreAuthorize("@securityUtils.isVerified()")
     public ResponseEntity<PostDetailResponseDTO> updatePost(@PathVariable Long id, @RequestBody PostRequestDTO request) {
             return ResponseEntity.ok(postService.updatePost(id,request));
     }

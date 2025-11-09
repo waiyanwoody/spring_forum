@@ -1,16 +1,26 @@
 package com.example.communityforum.api.controller;
 
+import com.example.communityforum.dto.PageResponse;
 import com.example.communityforum.dto.comment.CommentRequestDTO;
 import com.example.communityforum.dto.comment.CommentResponseDTO;
 import com.example.communityforum.persistence.entity.Comment;
 import com.example.communityforum.service.CommentService;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.persistence.EntityNotFoundException;
 import jakarta.validation.Valid;
+import org.springdoc.core.annotations.ParameterObject;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 @Tag(name = "Comments", description = "Endpoints for managing forum comments")
@@ -25,14 +35,24 @@ public class CommentController {
 
     //Get all comments
     @GetMapping
-    public ResponseEntity<List<Comment>> getAllComments(@RequestParam(required = false) Long postId) {
-        try {
-            List<Comment> comments = commentService.getAllComments();
-            return ResponseEntity.ok(comments);
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
-//            return ResponseEntity.badRequest().build();
-        }
+    public ResponseEntity<PageResponse<CommentResponseDTO>> getAllComments(
+            @ParameterObject
+            @Parameter(description = "Pagination and sorting parameters (e.g., ?page=0&size=5&sort=createdAt,DESC)")
+            @PageableDefault(page = 0, size = 10, sort = "createdAt", direction = Sort.Direction.DESC)
+            Pageable pageable,
+            @RequestParam(required = false) Long postId
+    ) {
+        Page<CommentResponseDTO> commentPage = commentService.getAllComments(pageable, postId);
+
+        PageResponse<CommentResponseDTO> response = PageResponse.<CommentResponseDTO>builder()
+                .content(commentPage.getContent())
+                .number(commentPage.getNumber())
+                .size(commentPage.getSize())
+                .totalElements(commentPage.getTotalElements())
+                .totalPages(commentPage.getTotalPages())
+                .build();
+
+        return ResponseEntity.ok(response);
     }
 
     //get comment by ID
@@ -42,21 +62,43 @@ public class CommentController {
         return ResponseEntity.ok(commentResponseDTO);
     }
 
+    // GET COMMENTS BY USER ID
+    @GetMapping("/user/{userId}")
+    public ResponseEntity<PageResponse<CommentResponseDTO>> getCommentsByUserId(
+            @PathVariable Long userId,
+            @ParameterObject
+            @PageableDefault(page = 0, size = 5, sort = "createdAt", direction = Sort.Direction.DESC)
+            Pageable pageable
+    ) {
+        Page<CommentResponseDTO> commentPage = commentService.getCommentsByUser(userId, pageable);
+
+        PageResponse<CommentResponseDTO> response = PageResponse.<CommentResponseDTO>builder()
+                .content(commentPage.getContent())
+                .number(commentPage.getNumber())
+                .size(commentPage.getSize())
+                .totalElements(commentPage.getTotalElements())
+                .totalPages(commentPage.getTotalPages())
+                .build();
+
+        return ResponseEntity.ok(response);
+    }
+
+    // create new comment
     @PostMapping
+    @PreAuthorize("@securityUtils.isVerified()")
     public CommentResponseDTO createComment(@Valid @RequestBody CommentRequestDTO dto) {
         return commentService.addComment(dto);
     }
 
-    @GetMapping("/post/{postId}")
-    public List<CommentResponseDTO> getCommentsByPost(@PathVariable Long postId) {
-        return commentService.getCommentsByPost(postId);
-    }
 
     // UPDATE COMMENT
     @PutMapping("/{id}")
-    public ResponseEntity<Comment> updateComment(@PathVariable Long id, @RequestBody Comment commentDetails) {
+    public ResponseEntity<CommentResponseDTO> updateComment(
+            @PathVariable Long id,
+            @RequestBody CommentRequestDTO dto
+    ) {
         try {
-            Comment updatedComment = commentService.updateComment(id, commentDetails);
+            CommentResponseDTO updatedComment = commentService.updateComment(id, dto);
             return ResponseEntity.ok(updatedComment);
         } catch (RuntimeException e) {
             return ResponseEntity.notFound().build();
@@ -67,24 +109,11 @@ public class CommentController {
 
     // DELETE COMMENT
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteComment(@PathVariable Long id) {
-        try {
-            commentService.deleteComment(id);
-            return ResponseEntity.noContent().build();
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
-        }
+    public ResponseEntity<Map<String, String>> deleteComment(@PathVariable Long id) {
+        commentService.deleteComment(id);
+        Map<String, String> response = Map.of("message", "Comment deleted successfully");
+        return ResponseEntity.ok(response);
     }
 
-    // GET COMMENTS BY USER ID
-    @GetMapping("/user/{userId}")
-    public ResponseEntity<List<Comment>> getCommentsByUserId(@PathVariable Long userId) {
-        try {
-            List<Comment> comments = commentService.getCommentsByUserId(userId);
-            return ResponseEntity.ok(comments);
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
-        }
-    }
 }
 
