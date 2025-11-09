@@ -3,6 +3,8 @@ package com.example.communityforum.service;
 import com.example.communityforum.dto.comment.CommentRequestDTO;
 import com.example.communityforum.dto.comment.CommentResponseDTO;
 import com.example.communityforum.events.CommentCreatedEvent;
+import com.example.communityforum.exception.ResourceNotFoundException;
+import com.example.communityforum.mapper.CommentMapper;
 import com.example.communityforum.persistence.entity.Comment;
 import com.example.communityforum.persistence.entity.Post;
 import com.example.communityforum.persistence.entity.User;
@@ -12,6 +14,8 @@ import com.example.communityforum.persistence.repository.UserRepository;
 import com.example.communityforum.security.SecurityUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -25,19 +29,33 @@ public class CommentService {
     private final UserRepository userRepository;
     private final SecurityUtils securityUtils;
     private final ApplicationEventPublisher  publisher;
+    private final CommentMapper commentMapper;
 
-    public CommentService(CommentRepository commentRepository, PostRepository postRepository, UserRepository userRepository, SecurityUtils securityUtils,  ApplicationEventPublisher publisher) {
+    public CommentService(CommentRepository commentRepository, PostRepository postRepository, UserRepository userRepository, CommentMapper commentMapper, SecurityUtils securityUtils,  ApplicationEventPublisher publisher) {
         this.commentRepository = commentRepository;
         this.postRepository = postRepository;
         this.userRepository = userRepository;
+        this.commentMapper = commentMapper;
         this.securityUtils = securityUtils;
         this.publisher = publisher;
+    }
+
+    //get all comments
+    public Page<CommentResponseDTO> getAllComments(Pageable pageable, Long postId) {
+        Page<Comment> commentPage;
+
+        if (postId != null) {
+            commentPage = commentRepository.findByPostId(postId, pageable);
+        } else {
+            commentPage = commentRepository.findAll(pageable);
+        }
+
+        return commentPage.map(commentMapper::toResponseDTO);
     }
 
     // Get value from application.properties
     @Value("${comment.max-depth:2}")
     private int maxDepth;
-
     //create new comment
     public CommentResponseDTO addComment(CommentRequestDTO dto) {
 
@@ -45,7 +63,7 @@ public class CommentService {
         User currentUser = securityUtils.getCurrentUser();
 
         Post post = postRepository.findById(dto.getPostId()).orElseThrow(
-                () -> new RuntimeException("post not found!")
+                () -> new ResourceNotFoundException("post",dto.getPostId())
         );
 
         Comment parent = null;
@@ -54,7 +72,7 @@ public class CommentService {
         //for reply
         if(dto.getParentCommentId() != null) {
             parent = commentRepository.findById(dto.getParentCommentId()).orElseThrow(
-                    () -> new RuntimeException("Parent comment not found")
+                    () -> new ResourceNotFoundException("Parent comment",dto.getParentCommentId())
             );
 
             depth = calculateDepth(parent) + 1;
@@ -65,7 +83,7 @@ public class CommentService {
         }
 
         Comment comment = Comment.builder()
-                .text(dto.getText())
+                .content(dto.getContent())
                 .post(post)
                 .user(currentUser)
                 .parentComment(parent)
@@ -74,14 +92,17 @@ public class CommentService {
         Comment saved = commentRepository.save(comment);
 
         // publish event after comment created succsesfully
-        publisher.publishEvent(CommentCreatedEvent.builder()
-                .receiverId(post.getUser().getId())     // post owner is the receiver
-                .senderId(currentUser.getId())          // commenter
-                .postTitle(post.getTitle())     // for title of the post
-                .build());
+        if(!post.getUser().getId().equals(currentUser.getId())) {
+            publisher.publishEvent(CommentCreatedEvent.builder()
+                    .receiverId(post.getUser().getId())     // post owner is the receiver
+                    .senderId(currentUser.getId())          // commenter
+                    .postTitle(post.getTitle())     // for title of the post
+                    .build());
+        }
+
 
         System.out.println("receiver id: "+ post.getUser().getId());
-        return toResponse(saved);
+        return commentMapper.toResponseDTO(saved);
     }
 
     // find root comments of post
@@ -91,27 +112,10 @@ public class CommentService {
         List<Comment> comments = commentRepository.findByPostAndParentCommentIsNull(post);
 
         return comments.stream()
-                .map(this::toResponse)
+                .map(commentMapper::toResponseDTO)
                 .collect(Collectors.toList());
     }
 
-    // to wrap to response dto
-    private CommentResponseDTO toResponse(Comment comment) {
-        CommentResponseDTO dto = new CommentResponseDTO();
-        dto.setId(comment.getId());
-        dto.setContent(comment.getText());
-        dto.setUsername(comment.getUser().getUsername());
-        dto.setUserId(comment.getUser().getId());
-        dto.setCreatedAt(comment.getCreatedAt());
-
-        // nested for replies
-        if (comment.getReplies() != null && !comment.getReplies().isEmpty()) {
-            dto.setReplies(comment.getReplies().stream()
-                    .map(this::toResponse)
-                    .collect(Collectors.toList()));
-        }
-        return dto;
-    }
 
     // calculate current depth of comment and return
     private int calculateDepth(Comment parentComment) {
@@ -124,40 +128,39 @@ public class CommentService {
         return depth;
     }
 
-    //get all comments
-    public List<Comment> getAllComments() {
-        return commentRepository.findAll();
-    }
-
     //get comment by ID
     public CommentResponseDTO getCommentById(Long id) {
         Comment comment = commentRepository.findById(id)
                 .orElseThrow(
-                        () -> new RuntimeException("comment not found!")
+                        () -> new ResourceNotFoundException("comment",id)
                 );
-        return toResponse(comment);
-    }
-
-    //get comment by post ID
-    public List<Comment> getCommentsByPostId(Long postId) {
-        return commentRepository.findByPostId(postId);
+        return commentMapper.toResponseDTO(comment);
     }
 
     //get comment by user ID
-    public List<Comment> getCommentsByUserId(Long userId) {
-        return commentRepository.findByUserId(userId);
+    public Page<CommentResponseDTO> getCommentsByUser(Long userId, Pageable pageable) {
+        Page<Comment> commentsPage = commentRepository.findByUserId(userId, pageable);
+        return commentsPage.map(commentMapper::toResponseDTO);
     }
-
     //update comment
-    public Comment updateComment(Long id,Comment newComment) {
-        return commentRepository.findById(id).map(comment -> {
-            comment.setText(newComment.getText());
-            return commentRepository.save(comment);
-        }).orElseThrow(() -> new RuntimeException("Comment not found with id: " + id));
+    public CommentResponseDTO updateComment(Long id, CommentRequestDTO dto) {
+        Comment comment = commentRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Comment", id));
+
+        comment.setContent(dto.getContent()); // only allow updating content
+        Comment updated = commentRepository.save(comment);
+
+        return commentMapper.toResponseDTO(updated); // map to DTO for API response
     }
 
     //delete comment
     public void deleteComment(Long id) {
-        commentRepository.deleteById(id);
+        // Check if the comment exists
+        Comment comment = commentRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Comment", id));
+
+        // Permanently delete it
+        commentRepository.delete(comment);
     }
+
 }

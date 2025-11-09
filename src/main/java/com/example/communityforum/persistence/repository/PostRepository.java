@@ -18,6 +18,8 @@ public interface PostRepository extends JpaRepository<Post, Long> {
 
     Page<Post> findAllByUser_Id(Long userId, Pageable pageable);
 
+    Optional<Post> findBySlug(String slug);
+
     @Query("select p from Post p where p.id = :id and p.deletedAt is null")
     Optional<Post> findByIdAndNotDeleted(@Param("id") Long id);
 

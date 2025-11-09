@@ -107,7 +107,7 @@ public class DataSeeder implements CommandLineRunner {
             List<Comment> comments = IntStream.range(0, 100)
                     .mapToObj(i -> {
                         Comment c = new Comment();
-                        c.setText(safeSubstring(faker.lorem().sentence(3, 8), 500));
+                        c.setContent(safeSubstring(faker.lorem().sentence(3, 8), 500));
                         c.setUser(users.get(faker.number().numberBetween(0, users.size())));
                         c.setPost(posts.get(faker.number().numberBetween(0, posts.size())));
                         return c;
