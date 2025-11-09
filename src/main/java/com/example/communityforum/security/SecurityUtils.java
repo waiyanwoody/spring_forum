@@ -9,6 +9,7 @@ import io.jsonwebtoken.Claims;
 
 import java.util.HashMap;
 
+import org.springframework.security.authentication.AuthenticationCredentialsNotFoundException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -43,7 +44,7 @@ public class SecurityUtils {
     public User getCurrentUser() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         if (authentication == null || !authentication.isAuthenticated()) {
-            throw new SecurityException("User not authenticated");
+            throw new AuthenticationCredentialsNotFoundException("User not authenticated");
         }
 
         Object principal = authentication.getPrincipal();

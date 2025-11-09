@@ -13,6 +13,7 @@ import com.example.communityforum.persistence.repository.UserRepository;
 import com.example.communityforum.security.JwtUtil;
 import com.example.communityforum.service.PostService;
 import com.github.dockerjava.zerodep.shaded.org.apache.hc.client5.http.classic.methods.HttpHead;
+import jakarta.transaction.Transactional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
