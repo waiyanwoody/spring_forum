@@ -1,5 +1,6 @@
 package com.example.communityforum.dto.post;
 
+import com.example.communityforum.persistence.entity.Post;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -7,6 +8,7 @@ import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import com.example.communityforum.dto.user.AuthorDTO;
 import com.example.communityforum.persistence.entity.Tag;
