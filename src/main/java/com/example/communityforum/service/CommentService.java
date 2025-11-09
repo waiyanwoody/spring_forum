@@ -92,11 +92,14 @@ public class CommentService {
         Comment saved = commentRepository.save(comment);
 
         // publish event after comment created succsesfully
-        publisher.publishEvent(CommentCreatedEvent.builder()
-                .receiverId(post.getUser().getId())     // post owner is the receiver
-                .senderId(currentUser.getId())          // commenter
-                .postTitle(post.getTitle())     // for title of the post
-                .build());
+        if(!post.getUser().getId().equals(currentUser.getId())) {
+            publisher.publishEvent(CommentCreatedEvent.builder()
+                    .receiverId(post.getUser().getId())     // post owner is the receiver
+                    .senderId(currentUser.getId())          // commenter
+                    .postTitle(post.getTitle())     // for title of the post
+                    .build());
+        }
+
 
         System.out.println("receiver id: "+ post.getUser().getId());
         return commentMapper.toResponseDTO(saved);
