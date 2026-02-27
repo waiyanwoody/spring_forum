@@ -54,7 +54,7 @@ public class User {
         @Column(name = "email_verified_at")
         private LocalDateTime emailVerifiedAt;
 
-        @OneToMany(mappedBy = "user", cascade = CascadeType.ALL)
+        @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
         @JsonIgnore
         private List<Post> posts;
 

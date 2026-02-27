@@ -226,6 +226,12 @@ public class GlobalExceptionHandler {
         return new ResponseEntity<>(apiError, status);
     }
 
+    @ExceptionHandler(SecurityException.class)
+    public ResponseEntity<?> handleSecurityException(SecurityException ex) {
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                .body(Map.of("status", 401, "message", ex.getMessage()));
+    }
+
     // Handle all other exceptions
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ApiError> handleGeneralException(Exception ex, WebRequest request) {

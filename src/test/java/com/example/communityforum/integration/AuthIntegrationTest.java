@@ -5,10 +5,12 @@ import com.example.communityforum.dto.auth.*;
 import com.example.communityforum.dto.user.UserRequestDTO;
 import com.example.communityforum.dto.user.UsernameCheckResponse;
 import com.example.communityforum.persistence.entity.User;
+import com.example.communityforum.persistence.repository.CommentRepository;
 import com.example.communityforum.persistence.repository.UserRepository;
 import com.example.communityforum.security.JwtUtil;
 import com.example.communityforum.service.VerificationService;
 
+import jakarta.transaction.Transactional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
@@ -19,6 +21,7 @@ import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.http.*;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -36,6 +39,9 @@ class AuthIntegrationTest {
     private UserRepository userRepository;
 
     @Autowired
+    private CommentRepository commentRepository;
+
+    @Autowired
     private JwtUtil jwtUtil;
 
     @MockitoBean
@@ -43,10 +49,13 @@ class AuthIntegrationTest {
 
     private String baseUrl;
 
+    private final BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
+
     @BeforeEach
     void setUp() {
+        commentRepository.deleteAll();
         userRepository.deleteAll();
-        baseUrl = "http://localhost:" + port + "/auth";
+        baseUrl = "http://localhost:" + port + "/auth"; // Must match @RequestMapping("/auth")
     }
 
     // ------------------------ REGISTER ------------------------
@@ -65,7 +74,6 @@ class AuthIntegrationTest {
         assertThat(response.getBody().getToken()).isNotBlank();
         assertThat(response.getBody().getUser().getUsername()).isEqualTo("alice");
 
-        // verify mock email sending
         Mockito.verify(verificationService, Mockito.times(1)).sendVerification(Mockito.any(User.class));
     }
 
@@ -74,7 +82,7 @@ class AuthIntegrationTest {
         User existing = new User();
         existing.setUsername("bob");
         existing.setEmail("bob@example.com");
-        existing.setPassword("password");
+        existing.setPassword(passwordEncoder.encode("password"));
         existing.setRole("USER");
         userRepository.save(existing);
 
@@ -96,7 +104,7 @@ class AuthIntegrationTest {
         User user = new User();
         user.setUsername("charlie");
         user.setEmail("charlie@example.com");
-        user.setPassword(new org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder().encode("password"));
+        user.setPassword(passwordEncoder.encode("password"));
         user.setRole("USER");
         userRepository.save(user);
 
@@ -117,7 +125,7 @@ class AuthIntegrationTest {
         User user = new User();
         user.setUsername("david");
         user.setEmail("david@example.com");
-        user.setPassword(new org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder().encode("correctpass"));
+        user.setPassword(passwordEncoder.encode("correctpass"));
         user.setRole("USER");
         userRepository.save(user);
 
@@ -147,7 +155,7 @@ class AuthIntegrationTest {
         User user = new User();
         user.setUsername("takenuser");
         user.setEmail("taken@example.com");
-        user.setPassword("pass");
+        user.setPassword(passwordEncoder.encode("pass"));
         user.setRole("USER");
         userRepository.save(user);
 
@@ -165,7 +173,7 @@ class AuthIntegrationTest {
         User user = new User();
         user.setUsername("eve");
         user.setEmail("eve@example.com");
-        user.setPassword("pass");
+        user.setPassword(passwordEncoder.encode("pass"));
         user.setRole("USER");
         userRepository.save(user);
 
