@@ -60,6 +60,12 @@ public class ProfileService {
         return toProfileDTO(user);
     }
 
+    public ProfileResponseDTO getUserProfileByUsername(String username) {
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new ResourceNotFoundException("User", username));
+        return toProfileDTO(user);
+    }
+
     private ProfileResponseDTO toProfileDTO(User user) {
         User currentUser = securityUtils.getCurrentUser();
         boolean followed = followRepository.existsByFollowerAndFollowing(currentUser, user);
