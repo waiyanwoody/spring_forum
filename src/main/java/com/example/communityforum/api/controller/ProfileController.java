@@ -59,9 +59,9 @@ public class ProfileController {
 
     // Get profile by username
     @GetMapping("/{username}")
-    public ResponseEntity<ProfileResponseDTO> getUserProfileById(@PathVariable String username) {
-        long userId = userRepository.findByUsername(username).get().getId();
-        return ResponseEntity.ok(profileService.getUserProfileById(userId));
+    public ResponseEntity<ProfileResponseDTO> getUserProfileByUsername(@PathVariable String username) {
+        // Let the service handle the logic and the error throwing
+        return ResponseEntity.ok(profileService.getUserProfileByUsername(username));
     }
 
     @PostMapping(value = "/avatar", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
