@@ -62,6 +62,15 @@ public class PostService {
        return postMapper.toDetailDTO(post,user);
     }
 
+    public PostDetailResponseDTO getPostBySlug(String slug) {
+        Post post = postRepository.findBySlug(slug)
+                .orElseThrow(() -> new ResourceNotFoundException("Post", slug));
+
+        User user = securityUtils.getCurrentUser();
+
+        return postMapper.toDetailDTO(post, user);
+    }
+
     // get like count for post
     private Map<Long, Long> getLikeCountMap(List<Long> postIds) {
         List<Object[]> counts = likeRepository.countLikesByPostIds(postIds);
