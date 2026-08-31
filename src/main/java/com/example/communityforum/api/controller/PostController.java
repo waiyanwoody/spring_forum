@@ -74,6 +74,13 @@ public class PostController {
         return ResponseEntity.ok(response);
     }
 
+    @GetMapping("/slug/{slug}")
+    public ResponseEntity<PostDetailResponseDTO> getPostBySlug(
+            @PathVariable String slug
+    ) {
+        return ResponseEntity.ok(postService.getPostBySlug(slug));
+    }
+
     //Get one post by id
     @GetMapping("/{id}")
     public ResponseEntity<PostDetailResponseDTO> getPostById(@PathVariable Long id) {
@@ -82,7 +89,7 @@ public class PostController {
 
     //Create a post
     @PostMapping
-    @PreAuthorize("@securityUtils.isVerified()")
+    //@PreAuthorize("@securityUtils.isVerified()")
     public ResponseEntity<PostDetailResponseDTO> addPost(@Valid @RequestBody PostRequestDTO request) {
         return ResponseEntity.status(HttpStatus.CREATED).body(postService.addPost(request));
     }
