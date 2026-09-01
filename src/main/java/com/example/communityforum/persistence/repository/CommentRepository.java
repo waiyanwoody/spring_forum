@@ -16,6 +16,9 @@ public interface CommentRepository extends JpaRepository<Comment, Long> {
 
     Page<Comment> findByUserId(Long userId, Pageable pageable);
 
+    // User's replies
+    List<Comment> findByUserIdOrderByCreatedAtDesc(Long userId);
+
     // to find top-level (root) comment
     List<Comment> findByPostAndParentCommentIsNull(Post post);
 

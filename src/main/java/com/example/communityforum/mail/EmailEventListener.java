@@ -11,11 +11,23 @@ import org.springframework.transaction.event.TransactionPhase;
 @Component
 @RequiredArgsConstructor
 public class EmailEventListener {
+
     private final EmailService emailService;
 
     @Async("appAsyncExecutor")
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void onVerificationRequested(VerificationRequested e) {
-        emailService.sendHtml(e.to(), e.subject(), e.body());
+
+        System.out.println("=================================");
+        System.out.println("VerificationRequested received!");
+        System.out.println("To: " + e.to());
+        System.out.println("Subject: " + e.subject());
+        System.out.println("=================================");
+
+        emailService.sendHtml(
+                e.to(),
+                e.subject(),
+                e.body()
+        );
     }
 }

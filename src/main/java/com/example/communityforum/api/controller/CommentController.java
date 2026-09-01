@@ -4,6 +4,7 @@ import com.example.communityforum.dto.PageResponse;
 import com.example.communityforum.dto.comment.CommentRequestDTO;
 import com.example.communityforum.dto.comment.CommentResponseDTO;
 import com.example.communityforum.persistence.entity.Comment;
+import com.example.communityforum.security.SecurityUtils;
 import com.example.communityforum.service.CommentService;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -28,9 +29,11 @@ import java.util.Optional;
 @RequestMapping("/api/comments")
 public class CommentController {
     private final CommentService commentService;
+    private final SecurityUtils securityUtils;
 
-    public CommentController(CommentService commentService) {
+    public CommentController(CommentService commentService, SecurityUtils securityUtils) {
         this.commentService = commentService;
+        this.securityUtils = securityUtils;
     }
 
     //Get all comments
@@ -85,8 +88,8 @@ public class CommentController {
 
     // create new comment
     @PostMapping
-    @PreAuthorize("@securityUtils.isVerified()")
     public CommentResponseDTO createComment(@Valid @RequestBody CommentRequestDTO dto) {
+        securityUtils.requireVerified(); // throws PermissionDeniedException if email not verified
         return commentService.addComment(dto);
     }
 
@@ -116,4 +119,3 @@ public class CommentController {
     }
 
 }
-

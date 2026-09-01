@@ -1,8 +1,6 @@
 package com.example.communityforum.dto.post;
 
 import com.example.communityforum.dto.user.UserResponseDTO;
-import com.example.communityforum.persistence.entity.Tag;
-
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -22,11 +20,11 @@ public class PostDetailResponseDTO {
     private String content;
     private List<String> tags;
     private String slug;
-    private LocalDateTime createdAt = LocalDateTime.now();
+    private LocalDateTime createdAt;
 
     private UserResponseDTO author;
 
     private long likeCount;
     private boolean liked;
-
+    private long commentCount;
 }

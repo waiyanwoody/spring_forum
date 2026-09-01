@@ -28,4 +28,7 @@ public interface LikeRepository extends JpaRepository<Like, Long> {
 
     // For comment likes
     long countByCommentId(Long commentId);
+
+    //For User's liked posts
+    List<Like> findByUserIdAndPostIsNotNullOrderByCreatedAtDesc(Long userId);
 }

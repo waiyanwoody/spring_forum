@@ -12,6 +12,7 @@ import com.example.communityforum.persistence.entity.User;
 import com.example.communityforum.persistence.repository.FollowRepository;
 import com.example.communityforum.persistence.repository.PostRepository;
 import com.example.communityforum.persistence.repository.UserRepository;
+import com.example.communityforum.security.SecurityUtils;
 import com.example.communityforum.service.PostService;
 import com.example.communityforum.service.UserService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -44,13 +45,16 @@ public class PostController {
     private final UserRepository userRepository;
     private final FollowRepository followRepository;
     private final PostRepository postRepository;
+    private final SecurityUtils securityUtils;
 
     public PostController(PostService postService, UserRepository userRepository,
-                          FollowRepository followRepository, PostRepository postRepository) {
+                          FollowRepository followRepository, PostRepository postRepository,
+                          SecurityUtils securityUtils) {
         this.postService = postService;
         this.userRepository = userRepository;
         this.followRepository = followRepository;
         this.postRepository = postRepository;
+        this.securityUtils = securityUtils;
     }
 
     // ────────────────────────────────────────────────────────────────────────────────
@@ -89,15 +93,15 @@ public class PostController {
 
     //Create a post
     @PostMapping
-    //@PreAuthorize("@securityUtils.isVerified()")
     public ResponseEntity<PostDetailResponseDTO> addPost(@Valid @RequestBody PostRequestDTO request) {
+        securityUtils.requireVerified(); // throws PermissionDeniedException if email not verified
         return ResponseEntity.status(HttpStatus.CREATED).body(postService.addPost(request));
     }
 
     //Update post by id
     @PutMapping("/{id}")
     public ResponseEntity<PostDetailResponseDTO> updatePost(@PathVariable Long id, @RequestBody PostRequestDTO request) {
-            return ResponseEntity.ok(postService.updatePost(id,request));
+        return ResponseEntity.ok(postService.updatePost(id,request));
     }
 
     // DELETE -> soft delete current user's or admin
